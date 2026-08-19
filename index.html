@@ -2737,7 +2737,9 @@ function render(){
         </tbody></table></div></div>`:""}
       ${L.length?`<div class="card"><h2>Как часто возвращается</h2>
         <p class="muted" style="margin:-4px 0 10px">Столбик — месяц, высота — сколько раз. Цвет — самое тяжёлое проявление в этом месяце.</p>
-        ${freqChart(L,24)}
+        ${(()=>{const f=L[L.length-1].d, now=new Date();
+          const m=(now.getFullYear()-+f.slice(0,4))*12+(now.getMonth()-(+f.slice(5,7)-1))+1;
+          return freqChart(L,Math.min(60,Math.max(12,m)));})()}
         ${trendVerdict(L,today)}</div>
       <div class="card"><h2>При каких диагнозах и чем лечили</h2>
         <p class="muted" style="margin:-4px 0 10px">Один и тот же симптом приходит по разным поводам. Отдельная строка — случаи, когда его просто отмечали и не лечили.</p>
