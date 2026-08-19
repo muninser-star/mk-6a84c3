@@ -2755,9 +2755,10 @@ function render(){
         <h3 style="margin-top:14px">Все препараты по этому симптому</h3>
         ${medChips(L)}</div>
       <div class="card"><h2>Когда возвращался</h2>
+        <p class="muted" style="margin:-4px 0 10px">Ряд начинается с первой записи по этому симптому — ${MON[+L[L.length-1].d.slice(5,7)-1]} ${L[L.length-1].d.slice(0,4)}.</p>
         <div class="stripwrap">
-          <div class="striprow"><div class="nm">${esc(symSel)}</div><div>${monthStrip(L,since)}</div></div>
-          <div class="striprow" style="border:0"><div class="nm"></div><div>${monthAxis(since)}</div></div>
+          <div class="striprow"><div class="nm">${esc(symSel)}</div><div>${monthStrip(L,L[L.length-1].d)}</div></div>
+          <div class="striprow" style="border:0"><div class="nm"></div><div>${monthAxis(L[L.length-1].d)}</div></div>
         </div>
         <div class="legend">${L.some(x=>x.u==="°C")
           ?TSCALE.map(t=>`<span><i style="background:${t[1]}"></i>${t[2]}</span>`).join("")
