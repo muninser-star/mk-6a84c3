@@ -55,6 +55,22 @@ th{text-align:left;font-size:12px;text-transform:uppercase;color:var(--muted);
 td{border-bottom:1px solid var(--line);padding:8px 9px;vertical-align:top}
 tr:last-child td{border-bottom:0}
 .tw{overflow-x:auto}
+/* карта симптомов */
+.strip{display:flex;gap:2px;align-items:flex-end;min-height:22px}
+.cell{width:11px;height:20px;border-radius:2px;background:var(--nonebg);flex:0 0 auto}
+.dcell{width:5px;height:18px;border-radius:1px;background:var(--nonebg);flex:0 0 auto}
+.symrow{display:grid;grid-template-columns:210px 1fr;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.symrow:last-child{border-bottom:0}
+.symrow .nm{font-size:13px;line-height:1.25}
+.axis{display:flex;gap:2px;font-size:10px;color:var(--muted);margin-top:3px}
+.axis span{width:11px;flex:0 0 auto;text-align:center}
+.red-dot{color:var(--bad);font-weight:700}
+.trend-up{color:var(--bad);font-weight:600}
+.trend-dn{color:var(--ok);font-weight:600}
+.logline{padding:9px 0;border-bottom:1px solid var(--line)}
+.logline:last-child{border-bottom:0}
+.pill{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;color:#fff}
+@media(max-width:640px){.symrow{grid-template-columns:1fr;gap:4px}}
 .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
 .s-ok{background:var(--okbg);color:var(--ok)} .s-warn{background:var(--warnbg);color:var(--warn)}
 .s-bad{background:var(--badbg);color:var(--bad)} .s-none{background:var(--nonebg);color:var(--none)}
@@ -126,7 +142,7 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 // ─────────────────────────── ДАННЫЕ ───────────────────────────
 // sys — система/орган, связывает запись с пиктограммой на силуэте
 const DATA = {
-anya:{
+anya:{/*SYM:anya*/sym:{"cat":[{"n":"Головная боль","sys":"heart","dx":"Хроническая артериальная гипертензия","why":"Чаще всего первый признак подъёма давления","red":0},{"n":"Повышение давления","sys":"heart","dx":"Хроническая артериальная гипертензия","why":"Записывать вместе с цифрами в поле «ощущение»","red":0},{"n":"Вспышки, мушки, тёмная штора в глазах","sys":"eye","dx":"ПВХРД обоих глаз, миопия высокой степени","why":"При высокой миопии риск отслойки выше. Появилось — к офтальмологу в тот же день","red":1},{"n":"Боль внизу живота","sys":"repro","dx":"Множественная миома матки, аденомиоз","why":"Основной симптом миомы. Рост узла виден по учащению боли раньше, чем по УЗИ","red":0},{"n":"Обильные месячные","sys":"repro","dx":"Множественная миома матки, аденомиоз","why":"Связаны с анемией. Учащение — повод пересдать ферритин","red":0},{"n":"Боль и нагрубание в груди","sys":"breast","dx":"Фиброзно-кистозная мастопатия","why":"Отслеживать связь с циклом","red":0},{"n":"Боль в пояснице","sys":"spine","dx":"Остеохондроз ШОП/ГОП/ПКО","why":"Уже был эпизод на 2 месяца в 2023 году","red":0},{"n":"Боль в коленях","sys":"spine","dx":"Повреждение менисков обоих коленей","why":"Связана с нагрузкой и весом","red":0},{"n":"Боль и скованность в кистях","sys":"spine","dx":"Артроз мелких суставов кистей","why":"Диагноз новый, 2026. Нужна базовая линия","red":0},{"n":"Тяжесть и отёки в ногах","sys":"vein","dx":"Варикозная болезнь вен нижних конечностей","why":"Вечерняя тяжесть — ранний признак прогрессирования","red":0},{"n":"Заложенность носа","sys":"ent","dx":"Хронический вазомоторный ринит","why":"Самая частая жалоба по эпизодам. Считаем дни в месяц","red":0},{"n":"Боль в горле","sys":"ent","dx":"Хронический назофарингит","why":"6 эпизодов из 14 в дневнике болезней — доминирующая тема","red":0},{"n":"Температура","sys":"ent","dx":"","why":"Отделяет вирусную историю от хронической","red":0},{"n":"Кашель","sys":"ent","dx":"Хронический назофарингит","why":"","red":0},{"n":"Герпес на губах","sys":"blood","dx":"","why":"Рецидивирует. Частота говорит о состоянии иммунитета","red":0},{"n":"Покраснение глаз","sys":"eye","dx":"","why":"Было 2 эпизода конъюнктивита","red":0},{"n":"Слабость и сонливость после еды","sys":"endo","dx":"Нарушенная толерантность к глюкозе","why":"Субъективный признак скачков сахара между анализами","red":0}],"log":[{"d":"2025-06-17","n":"Боль в горле","sys":"ent","i":null,"f":"Тянулось до 01.08.2025","m":"Кетопрофен, Стрепсилс","h":""},{"d":"2025-06-17","n":"Головная боль","sys":"heart","i":null,"f":"Вместе с горлом, тянулось до 01.08.2025","m":"Кетопрофен","h":""},{"d":"2024-12-14","n":"Герпес на губах","sys":"blood","i":null,"f":"До 20.12.2024","m":"Ацикловир 400, клей БФ-6","h":""},{"d":"2024-11-16","n":"Температура","sys":"ent","i":null,"f":"До 20.11.2024","m":"Амоксиклав 875 (антибиотик), Цитовир-3, Ингавирин","h":""},{"d":"2024-11-16","n":"Кашель","sys":"ent","i":null,"f":"До 20.11.2024","m":"Бромгексин, Доктор МОМ","h":""},{"d":"2024-11-16","n":"Заложенность носа","sys":"ent","i":null,"f":"Сопли","m":"Гриппферон","h":""},{"d":"2024-01-29","n":"Температура","sys":"ent","i":null,"f":"До 39,3 вечером 31.01, утром 39,0. Тянулось до 09.02.2024","m":"Нурофен, Арбидол максимум","h":""},{"d":"2024-01-29","n":"Боль в горле","sys":"ent","i":null,"f":"До 09.02.2024","m":"Ангидак","h":""},{"d":"2024-01-29","n":"Кашель","sys":"ent","i":null,"f":"До 09.02.2024","m":"Флуимуцил, Флуифорт","h":""},{"d":"2024-01-07","n":"Повышение давления","sys":"heart","i":null,"f":"Первый замер 140/90 в 00:00, в 11:00 уже 117/78. Эпизод тянулся до 03.03.2024, лечения и исхода в записи нет","m":"","h":""},{"d":"2023-12-30","n":"Покраснение глаз","sys":"eye","i":null,"f":"Вирусный конъюнктивит, слезился левый глаз. До 10.01.2024","m":"Мирамистин","h":""},{"d":"2023-12-15","n":"Боль в горле","sys":"ent","i":null,"f":"ОРВИ больше месяца, потеря голоса 19.12. До 22.01.2024","m":"Лизобакт, Тантум Верде, Фарингосепт, настойка прополиса","h":""},{"d":"2023-12-15","n":"Заложенность носа","sys":"ent","i":null,"f":"Сопли. До 22.01.2024","m":"Нобазит форте","h":""},{"d":"2023-12-15","n":"Температура","sys":"ent","i":null,"f":"До 22.01.2024","m":"Нобазит форте","h":""},{"d":"2023-12-15","n":"Головная боль","sys":"heart","i":null,"f":"До 22.01.2024","m":"Аскорутин","h":""},{"d":"2023-09-22","n":"Заложенность носа","sys":"ent","i":null,"f":"Сопли, откашливание. До 30.09.2023","m":"Нозефрин спрей","h":""},{"d":"2023-09-22","n":"Кашель","sys":"ent","i":null,"f":"Откашливание. До 30.09.2023","m":"Тантум Верде","h":""},{"d":"2023-09-07","n":"Боль в горле","sys":"ent","i":null,"f":"Обветрилось, неприятно глотать. До 10.09.2023","m":"Тантум Верде, Лизобакт","h":""},{"d":"2023-08-28","n":"Головная боль","sys":"heart","i":null,"f":"ОРВИ. До 09.09.2023","m":"Ибупрофен 400, Спазмалгон","h":""},{"d":"2023-08-28","n":"Температура","sys":"ent","i":null,"f":"До 09.09.2023","m":"Ибупрофен 400","h":""},{"d":"2023-08-04","n":"Боль в пояснице","sys":"spine","i":null,"f":"Сильнее после ходьбы. Тянулось 2 месяца, до 30.09.2023. Рекомендован бандаж 40 дней, 31.08 массаж","m":"Нурофен гель","h":""},{"d":"2023-07-21","n":"Покраснение глаз","sys":"eye","i":null,"f":"Конъюнктивит. До 30.09.2023","m":"Левофлоксацин 10 дней, затем Офтальмоферон 14 дней","h":""},{"d":"2023-07-16","n":"Герпес на губах","sys":"blood","i":null,"f":"До 17.07.2023","m":"Ацикловир 400","h":""}]},/*/SYM:anya*/
   name:"Опалинская Анна Александровна", short:"Аня", dob:"23.03.1983", age:43,
   note:"Собрано по 466 документам архива, 2013 – май 2026",
   soon:[
@@ -446,7 +462,7 @@ anya:{
   ]
 },
 
-dima:{
+dima:{/*SYM:dima*/sym:{"cat":[{"n":"Мокрая ночь","sys":"uro","dx":"Ночной энурез","why":"Главная метрика. Отмечать каждую ночь, включая сухие с побудкой — это разные вещи","red":0},{"n":"Головная боль","sys":"neuro","dx":"Минимальная мозговая дисфункция, последствие ППЦНС","why":"Была поводом для обращения к неврологу","red":0},{"n":"Быстро устаёт","sys":"blood","dx":"Дефицит железа без анемии","why":"Главный симптом дефицита железа. По нему увидим, работает ли Тотема","red":0},{"n":"Устают и болят ноги","sys":"ortho","dx":"Плоскостопие 1-2 степени, укорочение правой ноги","why":"Покажет, помогают ли стельки","red":0},{"n":"Боль в спине","sys":"spine","dx":"Нарушение осанки, искривление позвоночника","why":"Базовая линия до ортопеда","red":0},{"n":"Заложенность носа, чихание","sys":"ent","dx":"Аллергический ринит сезонный (пыльца деревьев)","why":"Сезон — весна. Нужна привязка к датам, чтобы подтвердить сезонность","red":0},{"n":"Боль в животе","sys":"gi","dx":"Перегиб жёлчного пузыря","why":"Связь с жирной едой","red":0},{"n":"Вздутие и газы после молочного","sys":"gi","dx":"Лактазная недостаточность, генотип CC","why":"Подтверждает или снимает клиническую значимость генотипа","red":0},{"n":"Перевозбуждение, раздражительность","sys":"neuro","dx":"Минимальная мозговая дисфункция","why":"Перед школой особенно важно","red":0},{"n":"Трудно заснуть","sys":"neuro","dx":"Минимальная мозговая дисфункция","why":"Связан с энурезом: глубина сна влияет на пробуждение по позыву","red":0}],"log":[]},/*/SYM:dima*/
   name:"Опалинский Дмитрий Денисович", short:"Дима", dob:"09.06.2019", age:7,
   note:"Паспорт здоровья: архив 2019–2023 плюс обследования 2025 – 16.08.2026",
   soon:[
@@ -1210,7 +1226,7 @@ dima:{
   never:["ТТГ — ни разу","25(OH)D — ни разу","Анти-тТГ IgA и общий IgA (скрининг целиакии)","ЭхоКГ после 11.2020","Соскоб на энтеробиоз","Осмотр стоматолога после 2019","Тест Адамса","Плантография","IgE на сорные травы","Измерение артериального давления"]
 },
 
-danya:{
+danya:{/*SYM:danya*/sym:{"cat":[{"n":"Свистящее дыхание, трудный выдох","sys":"lung","dx":"Эпизоды бронхиальной обструкции","why":"Каждый эпизод считать. Три и больше за год меняют тактику","red":1},{"n":"Кашель","sys":"ent","dx":"Эпизоды бронхиальной обструкции","why":"Ночной кашель отмечать отдельно в поле «ощущение»","red":0},{"n":"Быстро устаёт, бледный","sys":"blood","dx":"Железодефицитная анемия лёгкой степени","why":"По нему видно, работает ли лечение железом","red":0},{"n":"Отказ от еды, каприз за столом","sys":"gi","dx":"Избирательность в еде, тактильная и оральная чувствительность","why":"Считаем, чтобы отличить каприз от закономерности по продуктам","red":0},{"n":"Заложенность носа","sys":"ent","dx":"","why":"Часто предшествует обструкции","red":0},{"n":"Сыпь, зуд кожи","sys":"allerg","dx":"Эозинофилия неясного происхождения","why":"Может объяснить эозинофилию","red":0},{"n":"Одышка при нагрузке","sys":"heart","dx":"Открытое овальное окно, синусовая брадикардия","why":"Базовая линия перед контролем ЭхоКГ","red":0}],"log":[]},/*/SYM:danya*/
   name:"Опалинский Даниил Денисович", short:"Даня", dob:"12.06.2022", age:4,
   note:"Паспорт здоровья: архив ЕМИАС 2022–2026 плюс обследования до 16.08.2026",
   alarm:[["Кашель с хрипами и затруднённым дыханием","К врачу в тот же день и обязательно сказать про два прошлых эпизода с Пульмикортом — 10.2023 и 04.2024"],
@@ -1673,7 +1689,7 @@ danya:{
   never:["Ферритин до 26.02.2025 — то есть первые 2,5 года жизни","Ретикулоциты","СРБ","Цинк","ТТГ","Общий IgE","Осмотр стоматолога","ЭхоКГ после 06.07.2022","ЭКГ после 06.2023","Измерение артериального давления"]
 },
 
-denis:{
+denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плавающие мушки в глазах","sys":"eye","dx":"ПВХРД обоих глаз, миопия средней степени","why":"Ранний признак отслойки сетчатки. При появлении — к офтальмологу в тот же день, не ждать записи","red":1},{"n":"Боль в пояснице","sys":"spine","dx":"Распространённый остеохондроз, дорсопатия","why":"Основная хроническая боль. Частота важнее силы — считаем дни с болью в месяц","red":0},{"n":"Боль и скованность в шее","sys":"spine","dx":"Распространённый остеохондроз","why":"Связана с нагрузкой и сидячей работой","red":0},{"n":"Тяжесть в правом подреберье","sys":"liver","dx":"Жировой гепатоз с гепатомегалией","why":"Показывает, реагирует ли печень на вес и питание","red":0},{"n":"Изжога","sys":"gi","dx":"Эритематозная гастродуоденопатия","why":"Частота изжоги — прямой индикатор состояния желудка","red":0},{"n":"Боль в желудке","sys":"gi","dx":"Эритематозная гастродуоденопатия","why":"Отдельно от изжоги: другой механизм, другое лечение","red":0},{"n":"Приступ тревоги","sys":"psy","dx":"Тревожное расстройство, эпизодическое течение","why":"Течение эпизодическое — нужна частота, чтобы понять, обостряется или нет","red":0},{"n":"Плохо спал","sys":"psy","dx":"Тревожное расстройство","why":"Сон — ранний маркер обострения тревоги, идёт впереди приступов","red":0},{"n":"Сердцебиение, перебои","sys":"heart","dx":"Концентрическое ремоделирование левого желудочка","why":"Новый диагноз с августа 2026, базовой линии по симптомам нет","red":0},{"n":"Одышка при нагрузке","sys":"heart","dx":"Концентрическое ремоделирование ЛЖ, избыточная масса","why":"Отличает тренированность от сердечной причины по динамике","red":0},{"n":"Боль в суставе большого пальца стопы","sys":"endo","dx":"Мочевая кислота 439","why":"Классический дебют подагры. Один такой эпизод меняет тактику","red":1},{"n":"Обострение баланопостита","sys":"uro","dx":"Баланопостит, стойкое течение","why":"Стойкое течение — считаем рецидивы, чтобы оценить лечение","red":0},{"n":"Упадок сил, утомляемость","sys":"vit","dx":"Дефицит витамина D, тестостерон в серой зоне","why":"Субъективная часть, которую анализы не показывают","red":0},{"n":"Головная боль","sys":"neuro","dx":"","why":"Базовая линия. Нужна, чтобы заметить изменение на фоне давления или тревоги","red":0}],"log":[]},/*/SYM:denis*/
   name:"Опалинский Денис Сергеевич", short:"Денис", dob:"05.06.1986", age:40,
   note:"Паспорт здоровья, 2021 – 16.08.2026",
   alarm:[["Мушек резко стало сильно больше за день-два: «рой», «сажа», «паутина»","Осмотр глазного дна под мидриазом в течение суток. Не ждать февральского приёма"],
@@ -2256,7 +2272,7 @@ function silhouette(){
 }
 
 // ── Вкладки
-const TABS=[["home","Обзор"],["all","Всё"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["dx","Диагнозы"],["anam","Анамнез"]];
+const TABS=[["home","Обзор"],["all","Всё"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["sym","Симптомы"],["dx","Диагнозы"],["anam","Анамнез"]];
 
 function idOf(r){return DATA[cur].rec.indexOf(r)}
 
@@ -2376,6 +2392,51 @@ function filterBar(){
     <button data-f="" class="${sysFilter?"":"on"}">Все системы</button>
     ${used.map(s=>`<button data-f="${s}" class="${sysFilter===s?"on":""}">${esc(sysName(s))}</button>`).join("")}
   </div>`;
+}
+
+
+// ===== карта симптомов =====
+const MON=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+function isoOf(dt){return dt.toISOString().slice(0,10)}
+function shiftDays(n){const t=new Date();t.setHours(12,0,0,0);t.setDate(t.getDate()-n);return t}
+function symAgg(list,from,to){
+  const sel=list.filter(x=>x.d>=from&&x.d<=to);
+  const ii=sel.map(x=>x.i).filter(v=>v!=null);
+  return {n:sel.length,days:new Set(sel.map(x=>x.d)).size,
+          avg:ii.length?Math.round(ii.reduce((a,b)=>a+b,0)/ii.length*10)/10:null,
+          max:ii.length?Math.max(...ii):null};
+}
+function intColor(v){ if(v==null) return "var(--accent)"; if(v>=7) return "var(--bad)"; if(v>=4) return "var(--warn)"; return "var(--ok)"; }
+function fillFor(cnt,mx){
+  if(!cnt) return "background:var(--nonebg)";
+  const op=cnt>=5?1:cnt>=3?.72:cnt>=2?.48:.28;
+  return `background:${intColor(mx)};opacity:${op}`;
+}
+function monthStrip(list){
+  if(!list.length) return "";
+  const first=list[list.length-1].d, now=new Date();
+  let y=+first.slice(0,4), mo=+first.slice(5,7)-1;
+  const cells=[]; 
+  while(y<now.getFullYear()||(y===now.getFullYear()&&mo<=now.getMonth())){
+    const pre=`${y}-${String(mo+1).padStart(2,"0")}`;
+    const sel=list.filter(x=>x.d.startsWith(pre));
+    const ii=sel.map(x=>x.i).filter(v=>v!=null);
+    cells.push({y,mo,n:sel.length,mx:ii.length?Math.max(...ii):null});
+    mo++; if(mo>11){mo=0;y++}
+  }
+  return `<div class="strip">${cells.map(c=>
+    `<div class="cell" style="${fillFor(c.n,c.mx)}" title="${MON[c.mo]} ${c.y} — ${c.n?c.n+" раз"+(c.mx?", макс "+c.mx:""):"тихо"}"></div>`).join("")}</div>
+    <div class="axis">${cells.map(c=>`<span>${c.mo===0?"’"+String(c.y).slice(2):(c.mo%3===0?MON[c.mo][0]:"")}</span>`).join("")}</div>`;
+}
+function dayStrip(list,days){
+  const cells=[];
+  for(let i=days-1;i>=0;i--){
+    const dd=isoOf(shiftDays(i));
+    const sel=list.filter(x=>x.d===dd);
+    const ii=sel.map(x=>x.i).filter(v=>v!=null);
+    cells.push(`<div class="dcell" style="${fillFor(sel.length,ii.length?Math.max(...ii):null)}" title="${dd.split("-").reverse().join(".")} — ${sel.length?sel.length+" раз":"нет"}"></div>`);
+  }
+  return `<div class="strip">${cells.join("")}</div>`;
 }
 
 function render(){
@@ -2520,6 +2581,84 @@ function render(){
         <h2 class="row" data-sys="${sys}" style="cursor:pointer">${(organOf(sys)||{}).ic||""} ${esc(sysName(sys))} →</h2>
         ${groups[sys].map(s=>`<h3>${esc(s.name)}<span class="muted">, ${esc(s.unit)}</span></h3>${chart(s)}`).join("")}
       </div>`).join("")}`;
+  }
+
+  else if(tab==="sym"){
+    const S=d.sym||{cat:[],log:[]};
+    const today=isoOf(shiftDays(0)), d30=isoOf(shiftDays(29)), d60=isoOf(shiftDays(59)), d90=isoOf(shiftDays(89));
+    const names=[...new Set([...S.log.map(x=>x.n),...S.cat.map(x=>x.n)])];
+    const byName={}; names.forEach(n=>byName[n]=S.log.filter(x=>x.n===n));
+    const seen=names.filter(n=>byName[n].length).sort((a,b)=>byName[b].length-byName[a].length);
+    const never=S.cat.filter(c=>!byName[c.n].length);
+    const act90=seen.filter(n=>byName[n].some(x=>x.d>=d90));
+
+    const rows=seen.map(n=>{
+      const L=byName[n], a30=symAgg(L,d30,today), a90=symAgg(L,d90,today), prev=symAgg(L,d60,d30);
+      const c=S.cat.find(c=>c.n===n)||{};
+      let tr='<span class="muted">—</span>';
+      if(a30.n||prev.n){
+        if(a30.n>prev.n) tr=`<span class="trend-up">↑ чаще</span>`;
+        else if(a30.n<prev.n) tr=`<span class="trend-dn">↓ реже</span>`;
+        else tr=`<span class="muted">= так же</span>`;
+      }
+      const last=L[0].d, ago=Math.round((new Date(today)-new Date(last))/864e5);
+      return `<tr><td><b>${esc(n)}</b>${c.red?' <span class="red-dot" title="тревожный симптом">▲</span>':""}
+          <div class="muted" style="font-size:12px">${esc((organOf(c.sys)||{}).name||"")}</div></td>
+        <td style="text-align:center">${a30.n||'<span class="muted">0</span>'}</td>
+        <td style="text-align:center">${a30.avg!=null?`<span class="pill" style="background:${intColor(a30.avg)}">${String(a30.avg).replace(".",",")}</span>`:'<span class="muted">—</span>'}</td>
+        <td style="text-align:center">${a90.n||'<span class="muted">0</span>'}</td>
+        <td style="text-align:center">${a90.avg!=null?`<span class="pill" style="background:${intColor(a90.avg)}">${String(a90.avg).replace(".",",")}</span>`:'<span class="muted">—</span>'}</td>
+        <td style="text-align:center">${tr}</td>
+        <td class="muted">${last.split("-").reverse().join(".")}<br><span style="font-size:12px">${ago<1?"сегодня":ago<31?ago+" дн. назад":ago<400?Math.round(ago/30)+" мес. назад":Math.round(ago/365)+" г. назад"}</span></td></tr>`;
+    }).join("");
+
+    const nolog=!S.log.length;
+    m.innerHTML=`
+    <div class="card"><h2>Карта симптомов</h2>
+      <p class="muted" style="margin:-4px 0 8px">Считает, как часто симптом возвращается и насколько сильно. Нужен, чтобы видеть течение
+      между приёмами врача — когда болезнь просыпалась, когда затихала.</p>
+      <p style="margin:0">Чтобы добавить запись, скажите мне обычными словами: <i>«у Димы вчера болел живот на 6, дали Но-шпу, помогло»</i>.
+      Я впишу строку в <code>Реестр симптомов.csv</code> и обновлю книжку. Интенсивность — от 1 до 10, можно не указывать.</p>
+    </div>
+    ${nolog?`<div class="card"><p style="margin:0">Журнал пока пуст. Ниже — список того, за чем стоит следить: он собран
+      из активных диагнозов. Статистика появится с первой записи.</p></div>`:`
+    <div class="card"><h2>Сводка — 30 и 90 дней</h2>
+      <p class="muted" style="margin:-4px 0 10px">Тренд сравнивает последние 30 дней с предыдущими 30. Цифра в кружке — средняя интенсивность:
+      <span class="pill" style="background:var(--ok)">1–3</span> терпимо,
+      <span class="pill" style="background:var(--warn)">4–6</span> мешает,
+      <span class="pill" style="background:var(--bad)">7–10</span> сильно. ▲ — симптом, при котором врача не ждут.</p>
+      <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">30 дн.</th><th style="text-align:center">сила</th>
+        <th style="text-align:center">90 дн.</th><th style="text-align:center">сила</th><th style="text-align:center">тренд</th><th>последний раз</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+    </div>
+    <div class="card"><h2>Когда просыпалось и когда затихало</h2>
+      <p class="muted" style="margin:-4px 0 10px">Каждая клетка — месяц. Чем плотнее заливка, тем чаще симптом появлялся.
+      Пустая клетка — тишина. Наведите на клетку, чтобы увидеть месяц и число эпизодов.</p>
+      ${seen.map(n=>`<div class="symrow"><div class="nm">${esc(n)}</div><div>${monthStrip(byName[n])}</div></div>`).join("")}
+    </div>
+    ${act90.length?`<div class="card"><h2>Последние 90 дней, по дням</h2>
+      <p class="muted" style="margin:-4px 0 10px">Мелкая сетка: слева 90 дней назад, справа сегодня.</p>
+      ${act90.map(n=>`<div class="symrow"><div class="nm">${esc(n)}</div><div>${dayStrip(byName[n],90)}</div></div>`).join("")}
+    </div>`:`<div class="card"><p style="margin:0" class="muted">За последние 90 дней записей нет — в этом окне тихо.
+      Вся история ниже и на месячных полосах выше.</p></div>`}
+    <div class="card"><h2>Журнал <span class="muted" style="text-transform:none">— ${S.log.length}</span></h2>
+      ${S.log.map(x=>`<div class="logline">
+        <div><b>${esc(x.n)}</b> <span class="muted">· ${x.d.split("-").reverse().join(".")}</span>
+        ${x.i!=null?`<span class="pill" style="background:${intColor(x.i)};margin-left:6px">${x.i}/10</span>`:""}</div>
+        ${x.f?`<div style="margin-top:2px">${esc(x.f)}</div>`:""}
+        ${x.m?`<div class="muted" style="margin-top:2px">💊 ${esc(x.m)}${x.h?` — ${esc(x.h)}`:""}</div>`:""}
+      </div>`).join("")}
+    </div>`}
+    <div class="card"><h2>За чем следить <span class="muted" style="text-transform:none">— ${S.cat.length}</span></h2>
+      <p class="muted" style="margin:-4px 0 10px">Собрано из активных диагнозов. ▲ — симптом, при котором едут к врачу сразу, не дожидаясь записи.</p>
+      <div class="tw"><table><thead><tr><th>Симптом</th><th>Откуда</th><th>Зачем следить</th><th style="text-align:center">записей</th></tr></thead><tbody>
+      ${[...S.cat].sort((a,b)=>b.red-a.red).map(c=>`<tr${c.red?' style="background:var(--badbg)"':""}>
+        <td><b>${esc(c.n)}</b>${c.red?' <span class="red-dot">▲</span>':""}</td>
+        <td class="muted">${esc(c.dx||"—")}</td>
+        <td class="muted">${esc(c.why||"—")}</td>
+        <td style="text-align:center">${byName[c.n].length||'<span class="muted">—</span>'}</td></tr>`).join("")}
+      </tbody></table></div>
+    </div>`;
   }
 
   else if(tab==="dx"){
