@@ -59,18 +59,29 @@ tr:last-child td{border-bottom:0}
 .strip{display:flex;gap:2px;align-items:flex-end;min-height:22px}
 .cell{width:11px;height:20px;border-radius:2px;background:var(--nonebg);flex:0 0 auto}
 .dcell{width:5px;height:18px;border-radius:1px;background:var(--nonebg);flex:0 0 auto}
-.symrow{display:grid;grid-template-columns:210px 1fr;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
-.symrow:last-child{border-bottom:0}
-.symrow .nm{font-size:13px;line-height:1.25}
-.axis{display:flex;gap:2px;font-size:10px;color:var(--muted);margin-top:3px}
+.stripwrap{overflow-x:auto;overflow-y:hidden;padding-bottom:6px}
+.striprow{display:flex;align-items:center;gap:12px;padding:5px 0;border-bottom:1px solid var(--line);width:max-content;min-width:100%}
+.striprow:last-child{border-bottom:0}
+.striprow .nm{position:sticky;left:0;background:var(--card);width:190px;min-width:190px;font-size:13px;
+  line-height:1.25;padding-right:10px;z-index:2;cursor:pointer}
+.striprow .nm:hover{color:var(--accent)}
+.axis{display:flex;gap:2px;font-size:10px;color:var(--muted)}
 .axis span{width:11px;flex:0 0 auto;text-align:center}
+.vsw{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 12px}
+.vsw button{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:7px;
+  padding:6px 13px;font:inherit;font-size:13px;cursor:pointer}
+.vsw button.on{border-color:var(--accent);color:var(--accent);font-weight:600;background:var(--accentbg)}
+.medchip{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:0 5px 5px 0;font-size:13px}
+.medchip b{color:var(--accent)}
+.symlink{cursor:pointer}
+.symlink:hover{background:var(--hov,rgba(127,127,127,.09))}
 .red-dot{color:var(--bad);font-weight:700}
 .trend-up{color:var(--bad);font-weight:600}
 .trend-dn{color:var(--ok);font-weight:600}
 .logline{padding:9px 0;border-bottom:1px solid var(--line)}
 .logline:last-child{border-bottom:0}
 .pill{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;color:#fff}
-@media(max-width:640px){.symrow{grid-template-columns:1fr;gap:4px}}
+@media(max-width:640px){.striprow .nm{width:130px;min-width:130px;font-size:12px}}
 .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
 .s-ok{background:var(--okbg);color:var(--ok)} .s-warn{background:var(--warnbg);color:var(--warn)}
 .s-bad{background:var(--badbg);color:var(--bad)} .s-none{background:var(--nonebg);color:var(--none)}
@@ -2061,6 +2072,7 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
 const ST={ok:"норма",warn:"внимание",bad:"проблема",none:"не проверяли"};
 const TYPE={visit:"Посещение",instr:"Исследование",lab:"Анализ"};
 let cur="denis", tab="home", sysFilter=null, query="", taskIdx=null;
+let symView="list", symSel=null;
 
 const el=(h)=>{const d=document.createElement("div");d.innerHTML=h.trim();return d.firstChild};
 const ru=(iso)=>{const[y,m,d]=iso.split("-");return `${d}.${m}.${y}`};
@@ -2434,6 +2446,41 @@ function monthAxis(from){
   return `<div class="axis">${monthCells([],from).map(c=>
     `<span>${c.mo===0?"’"+String(c.y).slice(2):(c.mo%3===0?MON[c.mo][0]:"")}</span>`).join("")}</div>`;
 }
+function medsOf(list){
+  const m={};
+  list.forEach(x=>{ if(!x.m) return;
+    x.m.split(",").map(t=>t.trim().replace(/^(затем|и)\s+/i,"")).filter(Boolean).forEach(one=>{
+      const key=(one.replace(/\s+[\d(].*$/,"").trim())||one;
+      if(!m[key]) m[key]={n:0,full:new Set(),dates:[]};
+      m[key].n++; m[key].full.add(one); m[key].dates.push(x.d);
+    });
+  });
+  return Object.entries(m).map(([k,v])=>({name:k,n:v.n,full:[...v.full],last:v.dates.sort().reverse()[0]}))
+    .sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name));
+}
+function medChips(list){
+  const M=medsOf(list);
+  if(!M.length) return `<div class="muted">В этих записях лекарств нет</div>`;
+  return M.map(x=>`<span class="medchip" title="${esc(x.full.join(" · "))}">${esc(x.name)}${x.n>1?` <b>×${x.n}</b>`:""}</span>`).join("");
+}
+function symsFor(d,sys){
+  const S=d.sym||{cat:[],log:[]};
+  const names=[...new Set([...S.cat.filter(c=>c.sys===sys).map(c=>c.n),...S.log.filter(l=>l.sys===sys).map(l=>l.n)])];
+  return names.map(n=>({n,log:S.log.filter(l=>l.n===n),cat:S.cat.find(c=>c.n===n)||{}}))
+    .sort((a,b)=>b.log.length-a.log.length);
+}
+function lastAgo(iso,today){
+  const a=Math.round((new Date(today)-new Date(iso))/864e5);
+  return a<1?"сегодня":a<31?a+" дн. назад":a<400?Math.round(a/30)+" мес. назад":Math.floor(a/365)+" г. назад";
+}
+function logLines(list){
+  return list.map(x=>`<div class="logline">
+    <div><b>${esc(x.n)}</b> <span class="muted">· ${x.d.split("-").reverse().join(".")}</span>
+    ${x.i!=null?`<span class="pill" style="background:${intColor(x.i)};margin-left:6px">${x.i}/10</span>`:""}</div>
+    ${x.f?`<div style="margin-top:2px">${esc(x.f)}</div>`:""}
+    ${x.m?`<div class="muted" style="margin-top:2px">💊 ${esc(x.m)}${x.h?` — ${esc(x.h)}`:""}</div>`:""}
+  </div>`).join("");
+}
 function dayStrip(list,days){
   const cells=[];
   for(let i=days-1;i>=0;i--){
@@ -2596,77 +2643,123 @@ function render(){
     const byName={}; names.forEach(n=>byName[n]=S.log.filter(x=>x.n===n));
     const seen=names.filter(n=>byName[n].length).sort((a,b)=>byName[b].length-byName[a].length);
     const never=S.cat.filter(c=>!byName[c.n].length);
-    const act90=seen.filter(n=>byName[n].some(x=>x.d>=d90));
     const since=S.log.length?S.log[S.log.length-1].d:null;
+    const catOf=n=>S.cat.find(c=>c.n===n)||{};
 
-    const rows=seen.map(n=>{
-      const L=byName[n], a30=symAgg(L,d30,today), a90=symAgg(L,d90,today), prev=symAgg(L,d60,d30);
-      const c=S.cat.find(c=>c.n===n)||{};
-      let tr='<span class="muted">—</span>';
-      if(a30.n||prev.n){
-        if(a30.n>prev.n) tr=`<span class="trend-up">↑ чаще</span>`;
-        else if(a30.n<prev.n) tr=`<span class="trend-dn">↓ реже</span>`;
-        else tr=`<span class="muted">= так же</span>`;
+    // ---------- деталь по одному симптому ----------
+    if(symSel){
+      const L=byName[symSel]||[], c=catOf(symSel);
+      const dxs=(d.diagnoses||[]).filter(x=>x.sys===c.sys);
+      const a30=symAgg(L,d30,today), a90=symAgg(L,d90,today);
+      m.innerHTML=`
+      <button class="back" data-sym="">← Ко всем симптомам</button>
+      <div class="card">
+        <h2>${esc(symSel)}${c.red?' <span class="red-dot">▲</span>':""}</h2>
+        ${c.red?`<div class="pill" style="background:var(--bad);margin-bottom:8px">при появлении — к врачу сразу, не дожидаясь записи</div>`:""}
+        ${c.why?`<p style="margin:0 0 10px">${esc(c.why)}</p>`:""}
+        <div class="grid">
+          <div class="kpi"><div class="lab">Всего записей</div><div class="val">${L.length}</div></div>
+          <div class="kpi"><div class="lab">За 30 дней</div><div class="val">${a30.n}</div></div>
+          <div class="kpi"><div class="lab">За 90 дней</div><div class="val">${a90.n}</div></div>
+          <div class="kpi"><div class="lab">Средняя сила</div><div class="val">${a90.avg!=null?String(a90.avg).replace(".",","):"—"}</div></div>
+        </div>
+      </div>
+      ${dxs.length?`<div class="card"><h2>С какими диагнозами связан</h2>
+        <p class="muted" style="margin:-4px 0 10px">Нажмите диагноз — откроется вся система: анализы, исследования, приёмы.</p>
+        <div class="tw"><table><thead><tr><th>Диагноз</th><th>МКБ-10</th><th>С года</th><th>Состояние</th></tr></thead><tbody>
+        ${dxs.map(x=>`<tr class="dxrow" data-sys="${esc(x.sys||"")}"><td><b>${esc(x.n)}</b></td>
+          <td class="muted">${esc(x.c)}</td><td class="muted">${esc(x.y)}</td><td>${esc(x.s)}</td></tr>`).join("")}
+        </tbody></table></div></div>`:""}
+      ${L.length?`<div class="card"><h2>Чем лечили</h2>
+        <p class="muted" style="margin:-4px 0 10px">Собрано из всех записей по этому симптому. Число — сколько раз встречалось. Наведите, чтобы увидеть дозы.</p>
+        ${medChips(L)}</div>
+      <div class="card"><h2>Когда возвращался</h2>
+        <div class="stripwrap">
+          <div class="striprow"><div class="nm">${esc(symSel)}</div><div>${monthStrip(L,since)}</div></div>
+          <div class="striprow" style="border:0"><div class="nm"></div><div>${monthAxis(since)}</div></div>
+        </div></div>
+      <div class="card"><h2>Все записи <span class="muted" style="text-transform:none">— ${L.length}</span></h2>
+        ${logLines(L)}</div>`
+      :`<div class="card"><p style="margin:0">Записей по этому симптому пока нет. Он в списке наблюдения, потому что связан с диагнозом${c.dx?`: ${esc(c.dx)}`:""}.</p></div>`}`;
+    }
+
+    // ---------- обзор: четыре представления ----------
+    else {
+      const sw=`<div class="vsw">
+        ${[["list","Симптомы"],["strip","Когда возвращалось"],["sum","Сводка"],["log","Журнал"]]
+          .map(([k,t])=>`<button data-symview="${k}" class="${symView===k?"on":""}">${t}</button>`).join("")}
+      </div>`;
+      const intro=`<div class="card"><h2>Карта симптомов</h2>${sw}
+        <p class="muted" style="margin:0">Чтобы добавить запись, скажите мне обычными словами:
+        <i>«у Димы вчера болел живот на 6, дали Но-шпу, помогло»</i>. Интенсивность — от 1 до 10, можно не указывать.</p></div>`;
+
+      let body="";
+      if(!S.log.length){
+        body=`<div class="card"><p style="margin:0">Журнал пока пуст. Ниже — за чем стоит следить: список собран из активных диагнозов.</p></div>`;
       }
-      const last=L[0].d, ago=Math.round((new Date(today)-new Date(last))/864e5);
-      return `<tr><td><b>${esc(n)}</b>${c.red?' <span class="red-dot" title="тревожный симптом">▲</span>':""}
-          <div class="muted" style="font-size:12px">${esc((organOf(c.sys)||{}).name||"")}</div></td>
-        <td style="text-align:center">${a30.n||'<span class="muted">0</span>'}</td>
-        <td style="text-align:center">${a30.avg!=null?`<span class="pill" style="background:${intColor(a30.avg)}">${String(a30.avg).replace(".",",")}</span>`:'<span class="muted">—</span>'}</td>
-        <td style="text-align:center">${a90.n||'<span class="muted">0</span>'}</td>
-        <td style="text-align:center">${a90.avg!=null?`<span class="pill" style="background:${intColor(a90.avg)}">${String(a90.avg).replace(".",",")}</span>`:'<span class="muted">—</span>'}</td>
-        <td style="text-align:center">${tr}</td>
-        <td class="muted">${last.split("-").reverse().join(".")}<br><span style="font-size:12px">${ago<1?"сегодня":ago<31?ago+" дн. назад":ago<400?Math.round(ago/30)+" мес. назад":Math.floor(ago/365)+" г. назад"}</span></td></tr>`;
-    }).join("");
+      else if(symView==="strip"){
+        body=`<div class="card"><h2>Когда просыпалось и когда затихало</h2>
+          <p class="muted" style="margin:-4px 0 10px">Клетка — месяц, чем плотнее заливка, тем чаще. Пустая клетка — тишина.
+          Полосы прокручиваются вбок, шкала у всех общая. Нажмите название — откроется симптом целиком.</p>
+          <div class="stripwrap">
+            ${seen.map(n=>`<div class="striprow"><div class="nm" data-sym="${esc(n)}">${esc(n)}</div><div>${monthStrip(byName[n],since)}</div></div>`).join("")}
+            <div class="striprow" style="border:0"><div class="nm"></div><div>${monthAxis(since)}</div></div>
+          </div></div>`;
+      }
+      else if(symView==="sum"){
+        const rows=seen.map(n=>{
+          const L=byName[n], a30=symAgg(L,d30,today), a90=symAgg(L,d90,today), prev=symAgg(L,d60,d30), c=catOf(n);
+          let tr='<span class="muted">—</span>';
+          if(a30.n||prev.n) tr=a30.n>prev.n?'<span class="trend-up">↑ чаще</span>':a30.n<prev.n?'<span class="trend-dn">↓ реже</span>':'<span class="muted">= так же</span>';
+          return `<tr class="symlink" data-sym="${esc(n)}"><td><b>${esc(n)}</b>${c.red?' <span class="red-dot">▲</span>':""}
+              <div class="muted" style="font-size:12px">${esc((organOf(c.sys)||{}).name||"")}</div></td>
+            <td style="text-align:center">${a30.n||'<span class="muted">0</span>'}</td>
+            <td style="text-align:center">${a30.avg!=null?`<span class="pill" style="background:${intColor(a30.avg)}">${String(a30.avg).replace(".",",")}</span>`:'<span class="muted">—</span>'}</td>
+            <td style="text-align:center">${a90.n||'<span class="muted">0</span>'}</td>
+            <td style="text-align:center">${tr}</td>
+            <td class="muted">${L[0].d.split("-").reverse().join(".")}<br><span style="font-size:12px">${lastAgo(L[0].d,today)}</span></td></tr>`;
+        }).join("");
+        body=`<div class="card"><h2>Сводка — 30 и 90 дней</h2>
+          <p class="muted" style="margin:-4px 0 10px">Тренд сравнивает последние 30 дней с предыдущими 30. Кружок — средняя интенсивность:
+          <span class="pill" style="background:var(--ok)">1–3</span> терпимо,
+          <span class="pill" style="background:var(--warn)">4–6</span> мешает,
+          <span class="pill" style="background:var(--bad)">7–10</span> сильно.</p>
+          <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">30 дн.</th><th style="text-align:center">сила</th>
+            <th style="text-align:center">90 дн.</th><th style="text-align:center">тренд</th><th>последний раз</th></tr></thead>
+            <tbody>${rows}</tbody></table></div></div>`;
+      }
+      else if(symView==="log"){
+        body=`<div class="card"><h2>Журнал <span class="muted" style="text-transform:none">— ${S.log.length}</span></h2>
+          ${logLines(S.log)}</div>`;
+      }
+      else {
+        const rows=seen.map(n=>{
+          const L=byName[n], c=catOf(n);
+          const meds=medsOf(L).slice(0,3).map(x=>x.name);
+          return `<tr class="symlink" data-sym="${esc(n)}">
+            <td><b>${esc(n)}</b>${c.red?' <span class="red-dot">▲</span>':""}
+              <div class="muted" style="font-size:12px">${esc((organOf(c.sys)||{}).name||"")}</div></td>
+            <td style="text-align:center"><b>${L.length}</b></td>
+            <td class="muted">${L[0].d.split("-").reverse().join(".")}<br><span style="font-size:12px">${lastAgo(L[0].d,today)}</span></td>
+            <td class="muted">${meds.length?esc(meds.join(", "))+(medsOf(L).length>3?" …":""):"—"}</td>
+            <td style="color:var(--accent);font-weight:600">→</td></tr>`;
+        }).join("");
+        body=`<div class="card"><h2>Симптомы <span class="muted" style="text-transform:none">— ${seen.length}</span></h2>
+          <p class="muted" style="margin:-4px 0 10px">Нажмите симптом — все записи по нему, лекарства и связанные диагнозы. ▲ — едут к врачу сразу.</p>
+          <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили</th><th></th></tr></thead>
+            <tbody>${rows}</tbody></table></div></div>`;
+      }
 
-    const nolog=!S.log.length;
-    m.innerHTML=`
-    <div class="card"><h2>Карта симптомов</h2>
-      <p class="muted" style="margin:-4px 0 8px">Считает, как часто симптом возвращается и насколько сильно. Нужен, чтобы видеть течение
-      между приёмами врача — когда болезнь просыпалась, когда затихала.</p>
-      <p style="margin:0">Чтобы добавить запись, скажите мне обычными словами: <i>«у Димы вчера болел живот на 6, дали Но-шпу, помогло»</i>.
-      Я впишу строку в <code>Реестр симптомов.csv</code> и обновлю книжку. Интенсивность — от 1 до 10, можно не указывать.</p>
-    </div>
-    ${nolog?`<div class="card"><p style="margin:0">Журнал пока пуст. Ниже — список того, за чем стоит следить: он собран
-      из активных диагнозов. Статистика появится с первой записи.</p></div>`:`
-    <div class="card"><h2>Сводка — 30 и 90 дней</h2>
-      <p class="muted" style="margin:-4px 0 10px">Тренд сравнивает последние 30 дней с предыдущими 30. Цифра в кружке — средняя интенсивность:
-      <span class="pill" style="background:var(--ok)">1–3</span> терпимо,
-      <span class="pill" style="background:var(--warn)">4–6</span> мешает,
-      <span class="pill" style="background:var(--bad)">7–10</span> сильно. ▲ — симптом, при котором врача не ждут.</p>
-      <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">30 дн.</th><th style="text-align:center">сила</th>
-        <th style="text-align:center">90 дн.</th><th style="text-align:center">сила</th><th style="text-align:center">тренд</th><th>последний раз</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>
-    </div>
-    <div class="card"><h2>Когда просыпалось и когда затихало</h2>
-      <p class="muted" style="margin:-4px 0 10px">Каждая клетка — месяц. Чем плотнее заливка, тем чаще симптом появлялся.
-      Пустая клетка — тишина. Наведите на клетку, чтобы увидеть месяц и число эпизодов.</p>
-      ${seen.map(n=>`<div class="symrow"><div class="nm">${esc(n)}</div><div>${monthStrip(byName[n],since)}</div></div>`).join("")}
-      <div class="symrow" style="border:0;padding-top:0"><div></div><div>${monthAxis(since)}</div></div>
-    </div>
-    ${act90.length?`<div class="card"><h2>Последние 90 дней, по дням</h2>
-      <p class="muted" style="margin:-4px 0 10px">Мелкая сетка: слева 90 дней назад, справа сегодня.</p>
-      ${act90.map(n=>`<div class="symrow"><div class="nm">${esc(n)}</div><div>${dayStrip(byName[n],90)}</div></div>`).join("")}
-    </div>`:`<div class="card"><p style="margin:0" class="muted">За последние 90 дней записей нет — в этом окне тихо.
-      Вся история ниже и на месячных полосах выше.</p></div>`}
-    <div class="card"><h2>Журнал <span class="muted" style="text-transform:none">— ${S.log.length}</span></h2>
-      ${S.log.map(x=>`<div class="logline">
-        <div><b>${esc(x.n)}</b> <span class="muted">· ${x.d.split("-").reverse().join(".")}</span>
-        ${x.i!=null?`<span class="pill" style="background:${intColor(x.i)};margin-left:6px">${x.i}/10</span>`:""}</div>
-        ${x.f?`<div style="margin-top:2px">${esc(x.f)}</div>`:""}
-        ${x.m?`<div class="muted" style="margin-top:2px">💊 ${esc(x.m)}${x.h?` — ${esc(x.h)}`:""}</div>`:""}
-      </div>`).join("")}
-    </div>`}
-    <div class="card"><h2>За чем следить <span class="muted" style="text-transform:none">— ${S.cat.length}</span></h2>
-      <p class="muted" style="margin:-4px 0 10px">Собрано из активных диагнозов. ▲ — симптом, при котором едут к врачу сразу, не дожидаясь записи.</p>
-      <div class="tw"><table><thead><tr><th>Симптом</th><th>Откуда</th><th>Зачем следить</th><th style="text-align:center">записей</th></tr></thead><tbody>
-      ${[...S.cat].sort((a,b)=>b.red-a.red).map(c=>`<tr${c.red?' style="background:var(--badbg)"':""}>
-        <td><b>${esc(c.n)}</b>${c.red?' <span class="red-dot">▲</span>':""}</td>
-        <td class="muted">${esc(c.dx||"—")}</td>
-        <td class="muted">${esc(c.why||"—")}</td>
-        <td style="text-align:center">${byName[c.n].length||'<span class="muted">—</span>'}</td></tr>`).join("")}
-      </tbody></table></div>
-    </div>`;
+      const watch=never.length?`<div class="card"><h2>Пока не отмечалось <span class="muted" style="text-transform:none">— ${never.length}</span></h2>
+        <p class="muted" style="margin:-4px 0 10px">Собрано из активных диагнозов. ▲ — симптом, при котором едут к врачу сразу.</p>
+        <div class="tw"><table><thead><tr><th>Симптом</th><th>Откуда</th><th>Зачем следить</th></tr></thead><tbody>
+        ${[...never].sort((a,b)=>b.red-a.red).map(c=>`<tr class="symlink" data-sym="${esc(c.n)}"${c.red?' style="background:var(--badbg)"':""}>
+          <td><b>${esc(c.n)}</b>${c.red?' <span class="red-dot">▲</span>':""}</td>
+          <td class="muted">${esc(c.dx||"—")}</td><td class="muted">${esc(c.why||"—")}</td></tr>`).join("")}
+        </tbody></table></div></div>`:"";
+
+      m.innerHTML=intro+body+watch;
+    }
   }
 
   else if(tab==="dx"){
@@ -2834,6 +2927,7 @@ function render(){
           ${goto("Посещений",by("visit").length,"y-visit")}
           ${goto("Рядов динамики",ser.length,"y-ser")}
           ${goto("Диагнозов",d.diagnoses.filter(x=>x.sys===sysFilter||x.lnk===sysFilter).length,"y-dx")}
+          ${goto("Симптомов",symsFor(d,sysFilter).filter(x=>x.log.length).length,"y-sym")}
         </div>
       </div>
       ${blk(ops,"Операции и госпитализации","",'y-ops')}
@@ -2844,6 +2938,21 @@ function render(){
       ${blk(by("instr"),"Инструментальные исследования","",'y-instr')}
       ${blk(by("visit"),"Посещения врачей","",'y-visit')}
       ${all.length?"":`<div class="card"><div class="empty">По этой системе записей нет</div></div>`}
+      ${(()=>{const SY=symsFor(d,sysFilter),withLog=SY.filter(x=>x.log.length);
+        if(!SY.length) return "";
+        const allLog=withLog.flatMap(x=>x.log);
+        return `<div class="card" id="y-sym"><h2>Симптомы по этой системе <span class="muted" style="text-transform:none">— ${SY.length}</span></h2>
+        <p class="muted" style="margin:-4px 0 10px">Что человек чувствовал при этих диагнозах. Нажмите симптом — все его записи и лекарства.</p>
+        <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили</th><th></th></tr></thead><tbody>
+        ${SY.map(x=>{const meds=medsOf(x.log).slice(0,3).map(v=>v.name);
+          return `<tr class="symlink" data-sym="${esc(x.n)}"><td><b>${esc(x.n)}</b>${x.cat.red?' <span class="red-dot">▲</span>':""}</td>
+          <td style="text-align:center">${x.log.length?`<b>${x.log.length}</b>`:'<span class="muted">—</span>'}</td>
+          <td class="muted">${x.log.length?x.log[0].d.split("-").reverse().join("."):"не отмечалось"}</td>
+          <td class="muted">${meds.length?esc(meds.join(", ")):"—"}</td>
+          <td style="color:var(--accent);font-weight:600">→</td></tr>`}).join("")}
+        </tbody></table></div>
+        ${allLog.length?`<h3 style="margin-top:14px">Чем лечили по всей системе</h3>${medChips(allLog)}`:""}
+        </div>`;})()}
       <div class="card" id="y-dx"><h2>Диагнозы по системе</h2>
         ${d.diagnoses.filter(x=>x.sys===sysFilter||x.lnk===sysFilter).length?
           `<div class="tw"><table><thead><tr><th>Диагноз</th><th>МКБ-10</th><th>С года</th><th>Состояние</th></tr></thead><tbody>
@@ -2932,7 +3041,7 @@ function render(){
 // ── События
 const modal=document.getElementById("modal");
 const closeModal=()=>modal.classList.remove("on");
-const toSys=(s)=>{sysFilter=s;tab="sys";render();window.scrollTo({top:0,behavior:"smooth"})};
+const toSys=(s)=>{sysFilter=s;tab="sys";symSel=null;render();window.scrollTo({top:0,behavior:"smooth"})};
 
 document.addEventListener("click",e=>{
   const gz=e.target.closest("[data-goto]");
@@ -2955,8 +3064,10 @@ document.addEventListener("click",e=>{
   }
   if(e.target===modal){closeModal();return}
 
-  const w=e.target.closest("[data-w]"); if(w){cur=w.dataset.w;sysFilter=null;tab="home";closeModal();render();return}
-  const t=e.target.closest("[data-t]"); if(t){tab=t.dataset.t;sysFilter=null;render();window.scrollTo({top:0});return}
+  const w=e.target.closest("[data-w]"); if(w){cur=w.dataset.w;sysFilter=null;symSel=null;symView="list";tab="home";closeModal();render();return}
+  const sv=e.target.closest("[data-symview]"); if(sv){symView=sv.dataset.symview;symSel=null;render();window.scrollTo({top:0});return}
+  const sm=e.target.closest("[data-sym]"); if(sm){symSel=sm.dataset.sym||null;tab="sym";sysFilter=null;render();window.scrollTo({top:0});return}
+  const t=e.target.closest("[data-t]"); if(t){tab=t.dataset.t;sysFilter=null;symSel=null;render();window.scrollTo({top:0});return}
   const r=e.target.closest("[data-rec]"); if(r){openRec(+r.dataset.rec);return}
   const k=e.target.closest("[data-task]"); if(k){taskIdx=+k.dataset.task;tab="task";sysFilter=null;
     render();window.scrollTo({top:0,behavior:"smooth"});return}
