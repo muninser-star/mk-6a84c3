@@ -2863,7 +2863,7 @@ function render(){
         body=`<div class="card"><p style="margin:0">Журнал пока пуст. Ниже — за чем стоит следить: список собран из активных диагнозов.</p></div>`;
       }
       else if(symView==="ill"){
-        const E=d.ep||[];
+        const E=S.ep||[];
         const open=E.filter(x=>epOpen(x,today));
         body=E.length?`<div class="card"><h2>Болезни <span class="muted" style="text-transform:none">— ${E.length}</span></h2>
           <p class="muted" style="margin:-4px 0 10px">Эпизод — болезнь целиком, от первого признака до выздоровления.
