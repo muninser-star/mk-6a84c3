@@ -2479,7 +2479,7 @@ function monthCells(list,from){
 }
 function monthStrip(list,from){
   return `<div class="strip">${monthCells(list,from).map(c=>{const w=worstOf(c.recs);
-    return `<div class="cell" style="${fillFor(c.n,c.recs)}" title="${MON[c.mo]} ${c.y} — ${c.n?c.n+" раз"+(w&&w.t?", максимум "+w.t:""):"тихо"}"></div>`;}).join("")}</div>`;
+    return `<div class="cell" style="${fillFor(c.n,c.recs)}" title="${MON[c.mo]} ${c.y} — ${c.n?razy(c.n)+(w&&w.t?", максимум "+w.t:""):"тихо"}"></div>`;}).join("")}</div>`;
 }
 function monthAxis(from){
   const cells=monthCells([],from);
@@ -2533,7 +2533,7 @@ function yearBand(cells,w,gap){
 function freqChart(list,months){
   const cells=freqByMonth(list,months), mx=Math.max(1,...cells.map(c=>c.n));
   return `<div class="fwrap"><div class="fbars">${cells.map(c=>{const w=worstOf(c.recs);
-    return `<div class="fbar${c.n?"":" zero"}" title="${MON[c.mo]} ${c.y} — ${c.n} раз${w&&w.t?", максимум "+w.t:""}">
+    return `<div class="fbar${c.n?"":" zero"}" title="${MON[c.mo]} ${c.y} — ${razy(c.n)}${w&&w.t?", максимум "+w.t:""}">
       ${c.n?`<b>${c.n}</b>`:""}<i style="height:${c.n?Math.round(c.n/mx*100):0}%;${c.n&&w?`background:${w.c}`:""}"></i></div>`;}).join("")}</div>
     <div class="faxis">${cells.map(c=>`<span class="${c.mo===0?"jan":""}">${MON[c.mo]}</span>`).join("")}</div>
     ${yearBand(cells,24,3)}</div>`;
@@ -2573,6 +2573,11 @@ function epDays(e,today){
 }
 function epOpen(e,today){
   return !e.d2 && e.d1 < isoOf(shiftDays(30));
+}
+function razy(n){
+  const t=n%100, o=n%10;
+  if(t>=11&&t<=14) return n+" раз";
+  if(o===1) return n+" раз"; if(o>=2&&o<=4) return n+" раза"; return n+" раз";
 }
 function human(n){
   const t=n%100, o=n%10;
@@ -2794,7 +2799,7 @@ function render(){
       :`<div class="card"><p style="margin:0">У ${esc(d.short)} этот препарат в журнале не встречается.</p></div>`}
       ${others.length?`<div class="card"><h2>Кто ещё в семье принимал</h2>
         <div class="tw"><table><tbody>${others.map(o=>`<tr class="symlink" data-w="${o.k}"><td><b>${esc(DATA[o.k].short)}</b></td>
-          <td style="text-align:right">${o.n} раз</td></tr>`).join("")}</tbody></table></div></div>`:""}`;
+          <td style="text-align:right">${razy(o.n)}</td></tr>`).join("")}</tbody></table></div></div>`:""}`;
     }
 
     // ---------- деталь по одному симптому ----------
