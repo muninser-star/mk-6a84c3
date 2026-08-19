@@ -75,6 +75,8 @@ tr:last-child td{border-bottom:0}
 .medchip b{color:var(--accent)}
 .medchip.go{cursor:pointer}
 .medchip.go:hover{border-color:var(--accent);color:var(--accent)}
+.medlink{color:var(--accent);cursor:pointer;border-bottom:1px dashed currentColor}
+.medlink:hover{border-bottom-style:solid}
 .eprow td{vertical-align:top}
 .tag2{display:inline-block;background:var(--nonebg);border-radius:6px;padding:2px 8px;font-size:12px;margin:0 4px 4px 0}
 .fwrap{overflow-x:auto;padding-bottom:4px}
@@ -2596,7 +2598,11 @@ function logLines(list){
     ${(()=>{const w=sevOf(x);return w.t?`<span class="pill" style="background:${w.c};margin-left:6px">${w.t}</span>`:""})()}
     ${x.p?`<span class="muted" style="margin-left:6px;font-size:12px">повод: ${esc(x.p)}</span>`:""}</div>
     ${x.f?`<div style="margin-top:2px">${esc(x.f)}</div>`:""}
-    ${x.m?`<div class="muted" style="margin-top:2px">💊 ${esc(x.m)}${x.h?` — ${esc(x.h)}`:""}</div>`:""}
+    ${x.m?`<div class="muted" style="margin-top:2px">💊 ${x.m.split(",").map(t=>{
+      const one=t.trim().replace(/^(затем|и)\s+/i,""); if(!one) return "";
+      const key=one.replace(/\s+[\d(].*$/,"").trim()||one;
+      return `<span class="medlink" data-med="${esc(key)}">${esc(one)}</span>`;
+    }).filter(Boolean).join(", ")}${x.h?` — ${esc(x.h)}`:""}</div>`:""}
   </div>`).join("");
 }
 function dayStrip(list,days){
