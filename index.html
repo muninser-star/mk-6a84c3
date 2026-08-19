@@ -74,12 +74,17 @@ tr:last-child td{border-bottom:0}
 .medchip{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:4px 10px;margin:0 5px 5px 0;font-size:13px}
 .medchip b{color:var(--accent)}
 .fwrap{overflow-x:auto;padding-bottom:4px}
-.fbars{display:flex;gap:3px;align-items:flex-end;height:74px;width:max-content;min-width:100%}
-.fbar{width:17px;flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.fbars{display:flex;gap:3px;align-items:flex-end;height:84px;width:max-content;min-width:100%}
+.fbar{width:24px;flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
 .fbar i{display:block;border-radius:2px 2px 0 0;background:var(--accent);min-height:2px}
+.fbar b{position:absolute;top:-14px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted);font-weight:600}
 .fbar.zero i{background:var(--nonebg);height:2px}
-.faxis{display:flex;gap:3px;font-size:10px;color:var(--muted);margin-top:3px;width:max-content;min-width:100%}
-.faxis span{width:17px;flex:0 0 auto;text-align:center}
+.faxis{display:flex;gap:3px;font-size:10px;color:var(--muted);margin-top:4px;width:max-content;min-width:100%}
+.faxis span{width:24px;flex:0 0 auto;text-align:center}
+.faxis span.jan{color:var(--ink);font-weight:700}
+.yband{display:flex;gap:3px;width:max-content;min-width:100%;margin-top:3px}
+.yband div{flex:0 0 auto;font-size:11px;color:var(--muted);font-weight:600;border-top:2px solid var(--line);
+  padding-top:3px;text-align:center;overflow:hidden;white-space:nowrap}
 .verdict{padding:9px 12px;border-radius:8px;font-size:14px;margin-top:10px}
 .verdict.up{background:var(--badbg);color:var(--bad);font-weight:600}
 .verdict.dn{background:var(--okbg);color:var(--ok)}
@@ -2472,8 +2477,10 @@ function monthStrip(list,from){
     return `<div class="cell" style="${fillFor(c.n,c.recs)}" title="${MON[c.mo]} ${c.y} — ${c.n?c.n+" раз"+(w&&w.t?", максимум "+w.t:""):"тихо"}"></div>`;}).join("")}</div>`;
 }
 function monthAxis(from){
-  return `<div class="axis">${monthCells([],from).map(c=>
-    `<span>${c.mo===0?"’"+String(c.y).slice(2):(c.mo%3===0?MON[c.mo][0]:"")}</span>`).join("")}</div>`;
+  const cells=monthCells([],from);
+  return `<div class="axis">${cells.map(c=>
+    `<span title="${MON[c.mo]} ${c.y}">${c.mo%3===0?MON[c.mo][0]:""}</span>`).join("")}</div>
+    ${yearBand(cells,11,2)}`;
 }
 function medsOf(list){
   const m={};
@@ -2512,12 +2519,19 @@ function freqByMonth(list,months){
   }
   return out;
 }
+function yearBand(cells,w,gap){
+  const seg=[]; cells.forEach(c=>{const l=seg[seg.length-1];
+    if(l&&l.y===c.y) l.n++; else seg.push({y:c.y,n:1})});
+  return `<div class="yband">${seg.map(g=>
+    `<div style="width:${g.n*(w+gap)-gap}px">${g.n>1?g.y:"’"+String(g.y).slice(2)}</div>`).join("")}</div>`;
+}
 function freqChart(list,months){
   const cells=freqByMonth(list,months), mx=Math.max(1,...cells.map(c=>c.n));
   return `<div class="fwrap"><div class="fbars">${cells.map(c=>{const w=worstOf(c.recs);
     return `<div class="fbar${c.n?"":" zero"}" title="${MON[c.mo]} ${c.y} — ${c.n} раз${w&&w.t?", максимум "+w.t:""}">
-      <i style="height:${c.n?Math.round(c.n/mx*100):0}%;${c.n&&w?`background:${w.c}`:""}"></i></div>`;}).join("")}</div>
-    <div class="faxis">${cells.map(c=>`<span>${c.mo===0?"’"+String(c.y).slice(2):(c.n?c.n:"")}</span>`).join("")}</div></div>`;
+      ${c.n?`<b>${c.n}</b>`:""}<i style="height:${c.n?Math.round(c.n/mx*100):0}%;${c.n&&w?`background:${w.c}`:""}"></i></div>`;}).join("")}</div>
+    <div class="faxis">${cells.map(c=>`<span class="${c.mo===0?"jan":""}">${MON[c.mo]}</span>`).join("")}</div>
+    ${yearBand(cells,24,3)}</div>`;
 }
 function trendVerdict(list,today){
   const d90=isoOf(shiftDays(89)), d180=isoOf(shiftDays(179));
