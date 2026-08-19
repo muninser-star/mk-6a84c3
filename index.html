@@ -2412,9 +2412,9 @@ function fillFor(cnt,mx){
   const op=cnt>=5?1:cnt>=3?.72:cnt>=2?.48:.28;
   return `background:${intColor(mx)};opacity:${op}`;
 }
-function monthStrip(list){
-  if(!list.length) return "";
-  const first=list[list.length-1].d, now=new Date();
+function monthCells(list,from){
+  const first=from||(list.length?list[list.length-1].d:null); if(!first) return [];
+  const now=new Date();
   let y=+first.slice(0,4), mo=+first.slice(5,7)-1;
   const cells=[]; 
   while(y<now.getFullYear()||(y===now.getFullYear()&&mo<=now.getMonth())){
@@ -2424,9 +2424,15 @@ function monthStrip(list){
     cells.push({y,mo,n:sel.length,mx:ii.length?Math.max(...ii):null});
     mo++; if(mo>11){mo=0;y++}
   }
-  return `<div class="strip">${cells.map(c=>
-    `<div class="cell" style="${fillFor(c.n,c.mx)}" title="${MON[c.mo]} ${c.y} — ${c.n?c.n+" раз"+(c.mx?", макс "+c.mx:""):"тихо"}"></div>`).join("")}</div>
-    <div class="axis">${cells.map(c=>`<span>${c.mo===0?"’"+String(c.y).slice(2):(c.mo%3===0?MON[c.mo][0]:"")}</span>`).join("")}</div>`;
+  return cells;
+}
+function monthStrip(list,from){
+  return `<div class="strip">${monthCells(list,from).map(c=>
+    `<div class="cell" style="${fillFor(c.n,c.mx)}" title="${MON[c.mo]} ${c.y} — ${c.n?c.n+" раз"+(c.mx?", макс "+c.mx:""):"тихо"}"></div>`).join("")}</div>`;
+}
+function monthAxis(from){
+  return `<div class="axis">${monthCells([],from).map(c=>
+    `<span>${c.mo===0?"’"+String(c.y).slice(2):(c.mo%3===0?MON[c.mo][0]:"")}</span>`).join("")}</div>`;
 }
 function dayStrip(list,days){
   const cells=[];
@@ -2591,6 +2597,7 @@ function render(){
     const seen=names.filter(n=>byName[n].length).sort((a,b)=>byName[b].length-byName[a].length);
     const never=S.cat.filter(c=>!byName[c.n].length);
     const act90=seen.filter(n=>byName[n].some(x=>x.d>=d90));
+    const since=S.log.length?S.log[S.log.length-1].d:null;
 
     const rows=seen.map(n=>{
       const L=byName[n], a30=symAgg(L,d30,today), a90=symAgg(L,d90,today), prev=symAgg(L,d60,d30);
@@ -2609,7 +2616,7 @@ function render(){
         <td style="text-align:center">${a90.n||'<span class="muted">0</span>'}</td>
         <td style="text-align:center">${a90.avg!=null?`<span class="pill" style="background:${intColor(a90.avg)}">${String(a90.avg).replace(".",",")}</span>`:'<span class="muted">—</span>'}</td>
         <td style="text-align:center">${tr}</td>
-        <td class="muted">${last.split("-").reverse().join(".")}<br><span style="font-size:12px">${ago<1?"сегодня":ago<31?ago+" дн. назад":ago<400?Math.round(ago/30)+" мес. назад":Math.round(ago/365)+" г. назад"}</span></td></tr>`;
+        <td class="muted">${last.split("-").reverse().join(".")}<br><span style="font-size:12px">${ago<1?"сегодня":ago<31?ago+" дн. назад":ago<400?Math.round(ago/30)+" мес. назад":Math.floor(ago/365)+" г. назад"}</span></td></tr>`;
     }).join("");
 
     const nolog=!S.log.length;
@@ -2634,7 +2641,8 @@ function render(){
     <div class="card"><h2>Когда просыпалось и когда затихало</h2>
       <p class="muted" style="margin:-4px 0 10px">Каждая клетка — месяц. Чем плотнее заливка, тем чаще симптом появлялся.
       Пустая клетка — тишина. Наведите на клетку, чтобы увидеть месяц и число эпизодов.</p>
-      ${seen.map(n=>`<div class="symrow"><div class="nm">${esc(n)}</div><div>${monthStrip(byName[n])}</div></div>`).join("")}
+      ${seen.map(n=>`<div class="symrow"><div class="nm">${esc(n)}</div><div>${monthStrip(byName[n],since)}</div></div>`).join("")}
+      <div class="symrow" style="border:0;padding-top:0"><div></div><div>${monthAxis(since)}</div></div>
     </div>
     ${act90.length?`<div class="card"><h2>Последние 90 дней, по дням</h2>
       <p class="muted" style="margin:-4px 0 10px">Мелкая сетка: слева 90 дней назад, справа сегодня.</p>
