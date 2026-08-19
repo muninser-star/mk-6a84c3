@@ -2501,6 +2501,10 @@ function medsOf(list){
   return Object.entries(m).map(([k,v])=>({name:k,n:v.n,full:[...v.full],last:v.dates.sort().reverse()[0]}))
     .sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name));
 }
+function medLinks(names,tail){
+  if(!names.length) return "—";
+  return names.map(n=>`<span class="medlink" data-med="${esc(n)}">${esc(n)}</span>`).join(", ")+(tail||"");
+}
 function medChips(list){
   const M=medsOf(list);
   if(!M.length) return `<div class="muted">В этих записях лекарств нет</div>`;
@@ -2854,7 +2858,7 @@ function render(){
             <td><b>${g.p?esc(g.p):"Без диагноза — отмечал, не лечил"}</b></td>
             <td style="text-align:center"><b>${g.list.length}</b></td>
             <td class="muted">${per}</td>
-            <td class="muted">${meds.length?esc(meds.join(", ")):"—"}</td></tr>`;}).join("")}
+            <td class="muted">${medLinks(meds)}</td></tr>`;}).join("")}
         </tbody></table></div>
         <h3 style="margin-top:14px">Все препараты по этому симптому</h3>
         ${medChips(L)}</div>
@@ -2940,7 +2944,7 @@ function render(){
               <div class="muted" style="font-size:12px">${esc((organOf(c.sys)||{}).name||"")}</div></td>
             <td style="text-align:center"><b>${L.length}</b></td>
             <td class="muted">${L[0].d.split("-").reverse().join(".")}<br><span style="font-size:12px">${lastAgo(L[0].d,today)}</span></td>
-            <td class="muted">${meds.length?esc(meds.join(", "))+(medsOf(L).length>3?" …":""):"—"}</td>
+            <td class="muted">${medLinks(meds,medsOf(L).length>3?" …":"")}</td>
             <td style="color:var(--accent);font-weight:600">→</td></tr>`;
         }).join("");
         body=`<div class="card"><h2>Симптомы <span class="muted" style="text-transform:none">— ${seen.length}</span></h2>
@@ -3147,7 +3151,7 @@ function render(){
           return `<tr class="symlink" data-sym="${esc(x.n)}"><td><b>${esc(x.n)}</b>${x.cat.red?' <span class="red-dot">▲</span>':""}</td>
           <td style="text-align:center">${x.log.length?`<b>${x.log.length}</b>`:'<span class="muted">—</span>'}</td>
           <td class="muted">${x.log.length?x.log[0].d.split("-").reverse().join("."):"не отмечалось"}</td>
-          <td class="muted">${meds.length?esc(meds.join(", ")):"—"}</td>
+          <td class="muted">${medLinks(meds)}</td>
           <td style="color:var(--accent);font-weight:600">→</td></tr>`}).join("")}
         </tbody></table></div>
         ${allLog.length?`<h3 style="margin-top:14px">Чем лечили по всей системе</h3>${medChips(allLog)}`:""}
