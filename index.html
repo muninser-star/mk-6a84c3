@@ -2804,8 +2804,9 @@ function render(){
         ${logLines(hits)}</div>`
       :`<div class="card"><p style="margin:0">У ${esc(d.short)} этот препарат в журнале не встречается.</p></div>`}
       ${others.length?`<div class="card"><h2>Кто ещё в семье принимал</h2>
-        <div class="tw"><table><tbody>${others.map(o=>`<tr class="symlink" data-w="${o.k}"><td><b>${esc(DATA[o.k].short)}</b></td>
-          <td style="text-align:right">${razy(o.n)}</td></tr>`).join("")}</tbody></table></div></div>`:""}`;
+        <div class="tw"><table><tbody>${others.map(o=>`<tr class="symlink" data-medwho="${o.k}"><td><b>${esc(DATA[o.k].short)}</b></td>
+          <td style="text-align:right">${razy(o.n)}</td>
+          <td style="text-align:right;color:var(--accent);font-weight:600;width:30px">→</td></tr>`).join("")}</tbody></table></div></div>`:""}`;
     }
 
     // ---------- деталь по одному симптому ----------
@@ -3260,6 +3261,8 @@ document.addEventListener("click",e=>{
 
   const w=e.target.closest("[data-w]"); if(w){cur=w.dataset.w;sysFilter=null;symSel=null;medSel=null;symView="list";tab="home";closeModal();render();return}
   const sv=e.target.closest("[data-symview]"); if(sv){symView=sv.dataset.symview;symSel=null;medSel=null;render();window.scrollTo({top:0});return}
+  const mw=e.target.closest("[data-medwho]");
+  if(mw){cur=mw.dataset.medwho;tab="sym";symSel=null;sysFilter=null;closeModal();render();window.scrollTo({top:0});return}
   const md=e.target.closest("[data-med]"); if(md){medSel=md.dataset.med||null;symSel=null;tab="sym";sysFilter=null;render();window.scrollTo({top:0});return}
   const sm=e.target.closest("[data-sym]"); if(sm){symSel=sm.dataset.sym||null;medSel=null;tab="sym";sysFilter=null;render();window.scrollTo({top:0});return}
   const t=e.target.closest("[data-t]"); if(t){tab=t.dataset.t;sysFilter=null;symSel=null;medSel=null;render();window.scrollTo({top:0});return}
