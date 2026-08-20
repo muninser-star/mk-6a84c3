@@ -2789,6 +2789,16 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
+const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
+async function relaySend(sheet,row){
+  if(!RELAY) return false;
+  const body=JSON.stringify({sheet,row});
+  try{ const r=await fetch(RELAY,{method:"POST",body}); const j=await r.json(); return !!(j&&j.ok); }
+  catch(e){
+    try{ await fetch(RELAY,{method:"POST",body,mode:"no-cors"}); return true; }   // ответ прочитать нельзя, но запись проходит
+    catch(e2){ return false; }
+  }
+}
 const QKEY="mkQueue";
 // Правки, ещё не уехавшие на Диск. Показываем текстом, чтобы можно было
 // скопировать и прислать мне — это работает на любом устройстве, без входа.
@@ -2833,7 +2843,9 @@ function qPush(sheet,row){ const arr=qLoad(); arr.push({sheet,row}); try{ localS
 async function qFlush(){
   let arr=qLoad(), n=0;
   while(arr.length){
-    try{ await gAppend(arr[0].row,arr[0].sheet); arr.shift(); n++;
+    try{ if(RELAY){ if(!await relaySend(arr[0].sheet,arr[0].row)) throw new Error("приёмник молчит"); }
+      else await gAppend(arr[0].row,arr[0].sheet);
+      arr.shift(); n++;
       localStorage.setItem(QKEY,JSON.stringify(arr)); }
     catch(e){ break; }
   }
@@ -2979,6 +2991,11 @@ function editEpForm(epId){
     document.getElementById("edOk").disabled=true;
     ovRename(ep.id,nm); render();
     log("✓ Готово. Название сменилось и сохранится в этом браузере.","ok");
+    if(RELAY){
+      if(await relaySend(EDITS,row)) log("Записано в таблицу на Диске.","ok");
+      else { qPush(EDITS,row); log("Таблица сейчас недоступна — отправлю при следующей синхронизации.","wa"); }
+      return;
+    }
     if(!gToken){
       qPush(EDITS,row);
       log("На Диск уйдёт при следующей синхронизации — входить сейчас не нужно.","wa");
@@ -3038,6 +3055,13 @@ function addSymForm(epId){
       f:(document.getElementById("asNote").value||"").trim()});
     render();
     log("✓ Готово. Симптом добавлен и сохранится в этом браузере.","ok");
+    if(RELAY){
+      if(await relaySend(INBOX,row)) log("Записано в таблицу на Диске.","ok");
+      else { qPush(INBOX,row); log("Таблица сейчас недоступна — отправлю при следующей синхронизации.","wa"); }
+      document.getElementById("asOk").disabled=false;
+      document.getElementById("asName").value="";
+      return;
+    }
     if(!gToken){
       qPush(INBOX,row);
       log("На Диск уйдёт при следующей синхронизации — входить сейчас не нужно.","wa");
