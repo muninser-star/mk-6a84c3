@@ -81,6 +81,7 @@ tr:last-child td{border-bottom:0}
 .addsym{border:1px solid var(--line);background:var(--card);color:var(--accent);border-radius:6px;
   width:22px;height:22px;line-height:1;font-size:15px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:-3px;padding:0}
 .addsym:hover{border-color:var(--accent);background:var(--accentbg)}
+.editep{color:var(--muted);font-size:13px}
 .addform label{display:block;font-size:13px;color:var(--muted);margin:10px 0 3px}
 .addform input,.addform select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:var(--ink)}
 #sync{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:8px;
@@ -2776,6 +2777,13 @@ function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=fal
   if(!t){ return; }
   gToken=t;
   if(st==="sync") setTimeout(()=>{ syncModal(); syncLog("Вход выполнен, обновляю таблицы…","ok"); doSync(); },50);
+  if(st==="edit") setTimeout(async ()=>{
+    const raw=sessionStorage.getItem("pendingEdit"); sessionStorage.removeItem("pendingEdit");
+    if(!raw) return;
+    syncModal(); syncLog("Вход выполнен, записываю правку…","ok");
+    try{ await gAppend(JSON.parse(raw),EDITS); syncLog("✓ Правка записана в «"+esc(EDITS)+"»","ok"); }
+    catch(e){ syncLog("Не получилось: "+esc(e.message),"er"); }
+  },50);
   if(st==="add") setTimeout(async ()=>{
     const raw=sessionStorage.getItem("pendingAdd"); sessionStorage.removeItem("pendingAdd");
     if(!raw) return;
@@ -2797,15 +2805,53 @@ function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=fal
   },50);
 })();
 
-const INBOX="20_Добавлено_из_книжки";
+const INBOX="20_Добавлено_из_книжки", EDITS="21_Правки_из_книжки";
 
 // найти таблицу-входящие и дописать строку в конец
-async function gAppend(row){
+async function gAppend(row,sheet){
+  const INBOX=sheet||"20_Добавлено_из_книжки";
   const l=await gapi(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=200`);
   const f=(l.files||[]).find(x=>x.name===INBOX);
   if(!f) throw new Error(`на Диске нет таблицы «${INBOX}» — попросите меня её создать`);
   await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}/values/A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({values:[row]})});
+}
+
+// форма переименования болезни
+function editEpForm(epId){
+  const d=DATA[cur], S=d.sym||{cat:[],log:[],ep:[]};
+  const ep=(S.ep||[]).find(x=>x.id===epId); if(!ep) return;
+  const known=[...new Set((S.ep||[]).map(x=>x.dx).filter(x=>x&&!/не установлено|не уточнена|без диагноза/i.test(x)))].sort();
+  modal.className="modal on";
+  modal.innerHTML=`<div class="box"><button class="x" data-close>✕</button>
+    <h2>Как назвать болезнь</h2>
+    <p class="muted" style="margin:-4px 0 4px">${ru(ep.d1)}${ep.d2?" – "+ru(ep.d2):""}${ep.as?` · в дневнике записано как «${esc(ep.as)}»`:""}</p>
+    <div class="addform">
+      <label>Название болезни</label>
+      <input id="edName" list="edList" value="${esc(ep.dx||"")}" autocomplete="off">
+      <datalist id="edList">${known.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+      <p class="muted" style="font-size:12px;margin:8px 0 0">Симптомы этого эпизода: ${esc(epSyms(ep,S.log).join(", ")||"нет")}.
+      ${ep.tmax?`Максимальная температура ${String(ep.tmax).replace(".",",")} °C.`:""}</p>
+      <div style="margin-top:14px"><button class="gobtn" id="edOk" style="max-width:260px">Сохранить</button></div>
+      <p class="muted" style="font-size:12px;margin-top:10px">Правка уйдёт в таблицу «${esc(EDITS)}» на Диске — синхронизация её не затирает.
+      В книжке название сменится после того, как я перенесу правку в реестр.</p>
+      <div id="edLog" class="synclog"></div>
+    </div></div>`;
+  const log=(t,c)=>{const e=document.getElementById("edLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
+  document.getElementById("edOk").addEventListener("click",async ()=>{
+    const nm=(document.getElementById("edName").value||"").trim();
+    if(!nm){ log("Название не может быть пустым.","er"); return; }
+    if(nm===(ep.dx||"")){ log("Название не изменилось.","wa"); return; }
+    const row=[new Date().toISOString().slice(0,10), d.short, ep.id, ep.d1, "Болезнь", ep.dx||"", nm, "нет"];
+    document.getElementById("edOk").disabled=true;
+    if(!gToken){
+      sessionStorage.setItem("pendingEdit",JSON.stringify(row));
+      log("Нужно войти в Google — перехожу…");
+      location.href=gAuthUrl("edit"); return;
+    }
+    try{ await gAppend(row,EDITS); log("✓ Правка записана. Перенесу в реестр — и название сменится.","ok"); }
+    catch(e){ log("Не получилось: "+esc(e.message),"er"); document.getElementById("edOk").disabled=false; }
+  });
 }
 
 // форма добавления симптома к эпизоду
@@ -3134,7 +3180,9 @@ function render(){
           <div class="tw" style="margin-top:10px"><table><thead><tr><th>Болезнь</th><th>Начало</th><th>Конец</th><th>Длилось</th><th>Симптомы</th><th>Как протекало</th></tr></thead><tbody>
           ${E.map(x=>{const o=epOpen(x,today), dd=epDays(x,today), sy=epSyms(x,S.log);
             return `<tr class="eprow"${o?' style="background:var(--badbg)"':""}>
-              <td><b>${esc(x.dx||"без диагноза")}</b>${x.ab?' <span class="tag2" style="background:var(--warnbg);color:var(--warn)">антибиотик</span>':""}
+              <td><b>${esc(x.dx||"без диагноза")}</b>
+                <button class="addsym editep" data-ep="${esc(x.id)}" title="Переименовать болезнь">✎</button>
+                ${x.ab?' <span class="tag2" style="background:var(--warnbg);color:var(--warn)">антибиотик</span>':""}
                 ${x.as?`<div class="muted" style="font-size:12px">записано как «${esc(x.as)}»</div>`:""}</td>
               <td class="muted">${ru(x.d1)}</td>
               <td class="muted">${x.d2?ru(x.d2):(o?'<b style="color:var(--bad)">не закрыто</b>':'<span class="muted">—</span>')}</td>
@@ -3514,6 +3562,7 @@ document.addEventListener("click",e=>{
 
   const w=e.target.closest("[data-w]"); if(w){cur=w.dataset.w;sysFilter=null;symSel=null;medSel=null;symView="list";tab="home";closeModal();render();return}
   const sv=e.target.closest("[data-symview]"); if(sv){symView=sv.dataset.symview;symSel=null;medSel=null;render();window.scrollTo({top:0});return}
+  const ed=e.target.closest(".editep"); if(ed){ e.stopPropagation(); editEpForm(ed.dataset.ep); return; }
   const as=e.target.closest(".addsym"); if(as){ e.stopPropagation(); addSymForm(as.dataset.ep); return; }
   const mw=e.target.closest("[data-medwho]");
   if(mw){cur=mw.dataset.medwho;tab="sym";symSel=null;sysFilter=null;closeModal();render();window.scrollTo({top:0});return}
