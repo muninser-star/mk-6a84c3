@@ -2749,6 +2749,44 @@ async function gapi(url,opts,tries){
   }
 }
 let gToken=null;
+// Забрать правки, сделанные на других устройствах, и наложить их здесь.
+// Реестр по-прежнему за мной, но ждать переноса больше не нужно.
+async function pullShared(byName){
+  const keyOf=n=>Object.keys(DATA).find(k=>DATA[k].short===n);
+  const get=async id=>{
+    const r=await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A1:Z10000`);
+    return r.values||[];
+  };
+  let n=0;
+  if(byName[EDITS]){
+    const rows=await get(byName[EDITS]);
+    rows.slice(1).forEach(r=>{
+      if(!r[2]||!r[6]) return;
+      if((r[7]||"").trim()==="да") return;
+      const o=ovLoad();
+      if(o.ren[r[2]]===r[6]) return;
+      ovRename(r[2],r[6]); n++;
+    });
+  }
+  if(byName[INBOX]){
+    const rows=await get(byName[INBOX]);
+    rows.slice(1).forEach(r=>{
+      if(!r[5]||!r[3]) return;
+      const flag=(r[8]||"").trim();
+      if(flag==="да"||flag==="не нужно") return;
+      const who=keyOf((r[1]||"").trim()); if(!who) return;
+      const S=DATA[who].sym||{};
+      const already=(S.log||[]).some(x=>x.d===r[3]&&x.n===r[5]);
+      if(already) return;
+      const c=(S.cat||[]).find(z=>z.n===r[5]);
+      ovAdd({who,d:r[3],n:r[5],p:r[4]||"",sys:c?c.sys:"other",
+        i:r[6]?+r[6]:null,f:r[7]||""});
+      n++;
+    });
+  }
+  return n;
+}
+
 let syncAll=false;
 async function doSync(){
   const T=buildTables(), names=Object.keys(T);
@@ -2772,6 +2810,10 @@ async function doSync(){
       syncLog(`✓ ${esc(n)} — ${T[n].length-1} строк`,"ok"); ok++;
       await gPause(400);
     }
+    try{
+      const got=await pullShared(byName);
+      if(got){ render(); syncLog(`Подхватил правки с других устройств: ${got}`,"ok"); }
+    }catch(e){ syncLog("Правки с других устройств прочитать не удалось: "+esc(e.message),"wa"); }
     if(skip) syncLog(`Без изменений, пропущено: ${skip}`);
     syncLog(ok?`<b>Обновлено таблиц: ${ok}</b>`:`<b>Всё уже совпадает — переписывать нечего.</b>`,"ok");
     if(!ok&&!syncAll) syncLog(`<button class="gobtn" id="forceAll">Переписать всё заново</button>`);
@@ -2799,7 +2841,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 20:09";   // подставляется при публикации
+const BUILD="20.08 20:11";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
