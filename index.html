@@ -2686,8 +2686,6 @@ function buildTables(){
       r.push([`${k}-vac-${i+1}`,k,"вакцинация",o.v,o.d||"",o.note||""])});
     (DATA[k].past||[]).forEach((x,i)=>r.push([`${k}-past-${i+1}`,k,"перенесённое",Array.isArray(x)?x[0]:x,"",Array.isArray(x)?x[1]||"":""]))});
   add("17_Вакцинация_Перенесённое",["id","человек_id","тип","название","дата","заметка"],r);
-  r=[];P.forEach(k=>(DATA[k].kpi||[]).forEach((x,i)=>r.push([`${k}-kpi-${i+1}`,k,x.lab,x.val,x.sub||"",x.st||""])));
-  add("18_KPI",["id","человек_id","показатель","значение","подзаголовок","статус"],r);
   r=[]; if(typeof MEDREF!=="undefined") Object.entries(MEDREF).forEach(([n,v])=>r.push([n,v.c,v.k,v.t]));
   add("19_Справочник_лекарств",["название","категории","детям","что_это"],r);
   return T;
