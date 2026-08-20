@@ -2728,47 +2728,49 @@ async function doSync(){
   }catch(e){ syncLog("Не получилось: "+esc(e.message),"er"); }
   finally{ const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
 }
-// клиент создаём заранее, при загрузке: если делать это в обработчике клика,
-// GIS дозагружается асинхронно, жест пользователя теряется и всплывающее окно не открывается
-function gInit(){
-  if(gTokenClient||!G_CLIENT_ID) return true;
-  if(typeof google==="undefined"||!google.accounts||!google.accounts.oauth2) return false;
-  gTokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:G_CLIENT_ID, scope:G_SCOPES,
-    callback:t=>{ gBusy=false;
-      if(t.error){ syncModal(); syncLog("Google вернул ошибку: "+esc(t.error)+" "+esc(t.error_description||""),"er"); gReset(); return; }
-      gToken=t.access_token; syncModal(); syncLog("Вход выполнен, обновляю таблицы…","ok"); doSync(); },
-    error_callback:err=>{ gBusy=false; const ty=(err&&err.type)||"";
-      syncModal();
-      if(ty==="popup_closed") syncLog("Окно входа закрыто до подтверждения.","wa");
-      else if(ty==="popup_failed_to_open") syncLog("Браузер не дал открыть окно входа. Разрешите всплывающие окна для этого сайта.","er");
-      else syncLog("Вход не удался: "+esc(ty||"причина неизвестна")+" "+esc((err&&err.message)||""),"er");
-      gReset(); }
+// Вход через переход на Google и возврат обратно (без всплывающих окон —
+// их блокируют браузеры и расширения, а на статическом хостинге обойти это нечем).
+function gAuthUrl(){
+  const p=new URLSearchParams({
+    client_id:G_CLIENT_ID,
+    redirect_uri:location.origin+location.pathname,
+    response_type:"token",
+    scope:G_SCOPES,
+    include_granted_scopes:"true",
+    prompt:"select_account",
+    state:"sync"
   });
-  return true;
+  return "https://accounts.google.com/o/oauth2/v2/auth?"+p.toString();
 }
 function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
-let gBusy=false;
-(function waitG(n){ if(gInit()||n>60) return; setTimeout(()=>waitG(n+1),250); })(0);
+
+// возврат с токеном в адресе
+(function gBack(){
+  if(!location.hash||location.hash.indexOf("access_token")<0) return;
+  const h=new URLSearchParams(location.hash.slice(1));
+  const t=h.get("access_token"), st=h.get("state");
+  history.replaceState(null,"",location.origin+location.pathname);
+  if(!t){ return; }
+  gToken=t;
+  if(st==="sync") setTimeout(()=>{ syncModal(); syncLog("Вход выполнен, обновляю таблицы…","ok"); doSync(); },50);
+})();
+// отказ во входе тоже приходит в адресе
+(function gErr(){
+  if(!location.hash||location.hash.indexOf("error=")<0) return;
+  const h=new URLSearchParams(location.hash.slice(1));
+  const e=h.get("error");
+  history.replaceState(null,"",location.origin+location.pathname);
+  setTimeout(()=>{ syncModal();
+    syncLog("Google отказал во входе: "+esc(e||""),"er");
+    if(/redirect_uri|origin/i.test(e||""))
+      syncLog("В OAuth-клиенте нужно добавить в <b>Authorized redirect URIs</b> адрес:<br><code>"+esc(location.origin+location.pathname)+"</code>","wa");
+  },50);
+})();
 
 document.getElementById("sync").addEventListener("click",()=>{
-  if(!G_CLIENT_ID){
-    syncModal();
-    syncLog("Кнопка ещё не настроена — нет идентификатора приложения.","wa");
-    return;
-  }
-  if(!gInit()){
-    syncModal();
-    syncLog("Библиотека входа Google ещё не загрузилась. Подождите пару секунд и нажмите снова. Если не проходит — её блокирует расширение приватности или блокировщик рекламы.","er");
-    return;
-  }
-  if(gBusy) return;
-  gBusy=true;
-  const b=document.getElementById("sync"); b.disabled=true; b.textContent="Синхронизирую…";
-  // запрос доступа — первым действием, пока жест пользователя ещё «свежий»
-  try{ gTokenClient.requestAccessToken(); }
-  catch(e){ gBusy=false; syncModal(); syncLog("Не смог запросить доступ: "+esc(e.message),"er"); gReset(); return; }
-  syncModal(); syncLog("Открываю вход в Google… Если окно не появилось, проверьте, не заблокировал ли его браузер.");
+  if(!G_CLIENT_ID){ syncModal(); syncLog("Кнопка не настроена — нет идентификатора приложения.","wa"); return; }
+  const b=document.getElementById("sync"); b.disabled=true; b.textContent="Перехожу в Google…";
+  location.href=gAuthUrl();
 });
 
 function render(){
