@@ -82,8 +82,23 @@ tr:last-child td{border-bottom:0}
   width:22px;height:22px;line-height:1;font-size:15px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:-3px;padding:0}
 .addsym:hover{border-color:var(--accent);background:var(--accentbg)}
 .editep{color:var(--muted);font-size:13px}
-.addform label{display:block;font-size:13px;color:var(--muted);margin:10px 0 3px}
-.addform input,.addform select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:var(--ink)}
+.addform{max-width:100%}
+.addform .fld{margin-top:14px}
+.addform label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.addform .hint{font-size:12px;color:var(--muted);margin:0 0 6px;line-height:1.45}
+.addform input{width:100%;max-width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;
+  font:inherit;font-size:15px;background:var(--card);color:var(--ink)}
+.addform input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accentbg)}
+.addform input#asInt{max-width:150px}
+.addform .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.addform .btn{border:0;background:var(--accent);color:#fff;padding:10px 22px;border-radius:9px;
+  cursor:pointer;font:inherit;font-weight:600;font-size:14px}
+.addform .btn[disabled]{opacity:.5;cursor:default}
+.addform .btn.sec{background:var(--nonebg);color:var(--muted);font-weight:500}
+.addform .note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px;
+  border-top:1px solid var(--line);padding-top:10px}
+.ctx{background:var(--nonebg);border-radius:9px;padding:10px 12px;font-size:13px;line-height:1.5;margin:-2px 0 4px}
+.ctx b{color:var(--ink)}
 #sync{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:8px;
   padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
 #sync:hover{border-color:var(--accent);color:var(--accent)}
@@ -2836,16 +2851,21 @@ function editEpForm(epId){
   modal.className="modal on";
   modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
     <h2>Как назвать болезнь</h2>
-    <p class="muted" style="margin:-4px 0 4px">${ru(ep.d1)}${ep.d2?" – "+ru(ep.d2):""}${ep.as?` · в дневнике записано как «${esc(ep.as)}»`:""}</p>
+    <div class="ctx">${ru(ep.d1)}${ep.d2?" – "+ru(ep.d2):""}${ep.as?`<br>В дневнике записано как «<b>${esc(ep.as)}</b>»`:""}
+      <br>Симптомы: ${esc(epSyms(ep,S.log).join(", ")||"нет")}${ep.tmax?`<br>Максимальная температура <b>${String(ep.tmax).replace(".",",")} °C</b>`:""}</div>
     <div class="addform">
-      <label>Название болезни</label>
-      <input id="edName" list="edList" value="${esc(ep.dx||"")}" autocomplete="off">
-      <datalist id="edList">${known.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
-      <p class="muted" style="font-size:12px;margin:8px 0 0">Симптомы этого эпизода: ${esc(epSyms(ep,S.log).join(", ")||"нет")}.
-      ${ep.tmax?`Максимальная температура ${String(ep.tmax).replace(".",",")} °C.`:""}</p>
-      <div style="margin-top:14px"><button class="gobtn" id="edOk" style="max-width:260px">Сохранить</button></div>
-      <p class="muted" style="font-size:12px;margin-top:10px">Правка уйдёт в таблицу «${esc(EDITS)}» на Диске — синхронизация её не затирает.
-      В книжке название сменится после того, как я перенесу правку в реестр.</p>
+      <div class="fld">
+        <label for="edName">Название болезни</label>
+        <p class="hint">Можно выбрать из уже использованных, чтобы не плодить разные написания</p>
+        <input id="edName" list="edList" value="${esc(ep.dx||"")}" autocomplete="off">
+        <datalist id="edList">${known.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+      </div>
+      <div class="row">
+        <button class="btn" id="edOk">Сохранить</button>
+        <button class="btn sec" data-close>Отмена</button>
+      </div>
+      <p class="note">Правка уйдёт в таблицу «${esc(EDITS)}» на Диске — синхронизация её не затирает.
+        В книжке название сменится после того, как я перенесу правку в реестр.</p>
       <div id="edLog" class="synclog"></div>
     </div></div>`;
   const log=(t,c)=>{const e=document.getElementById("edLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
@@ -2873,20 +2893,31 @@ function addSymForm(epId){
   modal.className="modal on";
   modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
     <h2>Добавить симптом</h2>
-    <p class="muted" style="margin:-4px 0 4px">${esc(ep.dx||"")} · ${ru(ep.d1)}${ep.d2?" – "+ru(ep.d2):""}</p>
+    <div class="ctx"><b>${esc(ep.dx||"без диагноза")}</b> · ${ru(ep.d1)}${ep.d2?" – "+ru(ep.d2):""}
+      ${epSyms(ep,S.log).length?`<br>Уже отмечено: ${esc(epSyms(ep,S.log).join(", "))}`:""}</div>
     <div class="addform">
-      <label>Симптом — выберите из списка или впишите новый</label>
-      <input id="asName" list="asList" placeholder="например, Боль в горле" autocomplete="off">
-      <datalist id="asList">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
-      <label>Интенсивность 1–10 — если субъективное. Для измеримого лучше вписать значение в заметку</label>
-      <input id="asInt" type="number" min="1" max="10" placeholder="можно не заполнять">
-      <label>Заметка</label>
-      <input id="asNote" placeholder="что чувствовал, чем лечили, цифры">
-      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="gobtn" id="asOk" style="max-width:260px">Записать</button>
+      <div class="fld">
+        <label for="asName">Симптом</label>
+        <p class="hint">Выберите из списка известных или впишите новый</p>
+        <input id="asName" list="asList" placeholder="например, Апатия" autocomplete="off">
+        <datalist id="asList">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
       </div>
-      <p class="muted" style="font-size:12px;margin-top:10px">Запись уйдёт в таблицу «${esc(INBOX)}» на Диске — синхронизация её не затирает.
-      В саму книжку симптом попадёт после того, как я перенесу его в реестр.</p>
+      <div class="fld">
+        <label for="asInt">Интенсивность</label>
+        <p class="hint">От 1 до 10, для субъективного. Измеримое — градусы, давление — лучше в заметку</p>
+        <input id="asInt" type="number" min="1" max="10" placeholder="1–10">
+      </div>
+      <div class="fld">
+        <label for="asNote">Заметка</label>
+        <p class="hint">Что чувствовал, чем лечили, цифры</p>
+        <input id="asNote" placeholder="необязательно">
+      </div>
+      <div class="row">
+        <button class="btn" id="asOk">Записать</button>
+        <button class="btn sec" data-close>Отмена</button>
+      </div>
+      <p class="note">Запись уйдёт в таблицу «${esc(INBOX)}» на Диске — синхронизация её не затирает.
+        В книжку симптом попадёт после того, как я перенесу его в реестр.</p>
       <div id="asLog" class="synclog"></div>
     </div></div>`;
   const log=(t,c)=>{const e=document.getElementById("asLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
