@@ -2783,7 +2783,7 @@ function gAuthUrl(st){
     response_type:"token",
     scope:G_SCOPES,
     include_granted_scopes:"true",
-    prompt:"select_account",
+    login_hint:"muninser@gmail.com",
     state:st||"sync"
   });
   return "https://accounts.google.com/o/oauth2/v2/auth?"+p.toString();
@@ -2791,7 +2791,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 20:00";   // подставляется при публикации
+const BUILD="20.08 20:04";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -2824,12 +2824,12 @@ function showPending(){
   modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
     <h2>Правки для переноса</h2>
     ${L.length?`<p class="muted" style="margin:-4px 0 10px">Эти изменения сделаны в этом браузере и ещё не уехали на Диск.
-      Скопируйте и пришлите мне — я внесу в реестр. Работает без входа в Google.</p>
+      В книжке они уже действуют. В таблицу уйдут при первой удачной синхронизации — ничего делать не нужно.</p>
       <textarea id="pendTa" style="width:100%;height:150px;padding:10px;border:1px solid var(--line);
         border-radius:9px;font:inherit;font-size:13px;background:var(--card);color:var(--ink)"
         readonly>${esc(L.join("\n"))}</textarea>
       <div class="row" style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn" id="pendCopy" style="border:0;background:var(--accent);color:#fff;padding:10px 22px;border-radius:9px;cursor:pointer;font:inherit;font-weight:600">Скопировать</button>
+        <button class="btn" id="pendCopy" style="border:0;background:var(--nonebg);color:var(--muted);padding:10px 22px;border-radius:9px;cursor:pointer;font:inherit;font-weight:600">Скопировать текстом</button>
       </div>`
     :`<p style="margin:0">Всё перенесено — ничего не ждёт отправки.</p>`}
     </div>`;
@@ -3377,7 +3377,7 @@ function render(){
           <p class="muted" style="margin:-4px 0 10px">Эпизод — болезнь целиком, от первого признака до выздоровления.
           «Не закрыто» значит, что дата окончания не проставлена, а с начала прошло больше 30 дней: либо забыли закрыть, либо тянется до сих пор.</p>
           ${pendingCount()?`<div class="verdict wa" style="background:var(--warnbg);color:var(--warn);cursor:pointer" id="pendBar">
-            Правок в этом браузере, не уехавших на Диск: ${pendingCount()} — нажмите, чтобы скопировать и прислать мне</div>`:""}
+            Правок сохранено здесь, но ещё не в таблице: ${pendingCount()}. Они не потеряются — уйдут при первой удачной синхронизации. Нажмите, чтобы посмотреть список</div>`:""}
           ${open.length?`<div class="verdict up">Не закрыто: ${open.length} — ${esc(open.map(x=>x.dx).join("; "))}</div>`:""}
           <div class="tw" style="margin-top:10px"><table><thead><tr><th>Болезнь</th><th>Начало</th><th>Конец</th><th>Длилось</th><th>Симптомы</th><th>Как протекало</th></tr></thead><tbody>
           ${E.map(x=>{const o=epOpen(x,today), dd=epDays(x,today), sy=epSyms(x,S.log);
