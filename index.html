@@ -2662,7 +2662,7 @@ function buildTables(){
   add("07_Динамика",["id","человек_id","показатель","дата","значение","единица","система","норма_мин","норма_макс","серия_id"],r);
   r=[];P.forEach(k=>{(DATA[k].meds||[]).forEach((x,i)=>r.push([`${k}-med-${i+1}`,k,x.n,x.how||"",x.till||"",x.why||"","принимает"]));
     (DATA[k].medsOff||[]).forEach((x,i)=>r.push([`${k}-medoff-${i+1}`,k,Array.isArray(x)?x[0]:x,"","",Array.isArray(x)?x[1]||"":"","отменено"]))});
-  add("08_Лекарства",["id","человек_id","название","схема","до","зачем","статус"],r);
+  add("08_Постоянные_назначения",["id","человек_id","название","схема","до","зачем","статус"],r);
   r=[];P.forEach(k=>((DATA[k].sym||{}).log||[]).forEach((x,i)=>{ if(!x.m) return;
     x.m.split(",").map(t=>t.trim().replace(/^(затем|и)\s+/i,"")).filter(Boolean).forEach((one,j)=>
       r.push([`${k}-take-${i+1}-${j+1}`,k,x.d,one.replace(/\s+[\d(].*$/,"").trim()||one,one,x.n,`${k}-log-${i+1}`,x.h||""]))}));
