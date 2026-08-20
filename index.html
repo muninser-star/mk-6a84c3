@@ -2701,10 +2701,22 @@ function syncModal(){
     <div class="synclog" id="synclog"></div></div>`;
   modal.classList.add("on");
 }
-async function gapi(url,opts){
-  const r=await fetch(url,{...opts,headers:{authorization:"Bearer "+gToken,...(opts&&opts.headers||{})}});
-  if(!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0,200)}`);
-  return r.status===204?{}:r.json();
+const gPause=ms=>new Promise(r=>setTimeout(r,ms));
+// Google иногда отвечает 503 или 429, если запросы идут плотно — повторяем с нарастающей паузой
+async function gapi(url,opts,tries){
+  const max=tries||4;
+  for(let n=1;n<=max;n++){
+    let r;
+    try{ r=await fetch(url,{...opts,headers:{authorization:"Bearer "+gToken,...(opts&&opts.headers||{})}}); }
+    catch(e){ if(n===max) throw new Error("сеть недоступна: "+e.message); await gPause(800*n); continue; }
+    if(r.ok) return r.status===204?{}:r.json();
+    const body=(await r.text()).slice(0,200);
+    if((r.status===429||r.status>=500)&&n<max){
+      syncLog(`  Google ответил ${r.status}, жду ${n*2} с и повторяю…`,"wa");
+      await gPause(n*2000); continue;
+    }
+    throw new Error(`${r.status} ${body}`);
+  }
 }
 let gToken=null;
 async function doSync(){
@@ -2722,6 +2734,7 @@ async function doSync(){
       await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A1?valueInputOption=RAW`,
         {method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({values:T[n]})});
       syncLog(`✓ ${esc(n)} — ${T[n].length-1} строк`,"ok"); ok++;
+      await gPause(400);
     }
     syncLog(`<b>Обновлено таблиц: ${ok} из ${names.length}</b>`,"ok");
     if(miss.length) syncLog("На Диске нет таких таблиц, их нужно создать один раз:<br>"+miss.map(esc).join("<br>"),"wa");
