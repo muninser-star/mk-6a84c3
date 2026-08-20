@@ -2740,12 +2740,38 @@ document.getElementById("sync").addEventListener("click",()=>{
   }
   syncModal(); syncLog("Открываю вход в Google…");
   const b=document.getElementById("sync"); b.disabled=true; b.textContent="Синхронизирую…";
-  if(!gTokenClient){
-    gTokenClient=google.accounts.oauth2.initTokenClient({client_id:G_CLIENT_ID,scope:G_SCOPES,
-      callback:t=>{ if(t.error){syncLog("Вход отменён","er");b.disabled=false;b.textContent="⟳ Синхронизировать";return;}
-        gToken=t.access_token; doSync(); }});
+  const reset=()=>{b.disabled=false;b.textContent="⟳ Синхронизировать";};
+  if(typeof google==="undefined"||!google.accounts||!google.accounts.oauth2){
+    syncLog("Библиотека входа Google не загрузилась. Обычно это блокировщик рекламы или расширение приватности — отключите его для этой страницы и обновите.","er");
+    reset(); return;
   }
-  gTokenClient.requestAccessToken();
+  let done=false;
+  if(!gTokenClient){
+    gTokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:G_CLIENT_ID, scope:G_SCOPES,
+      callback:t=>{ done=true;
+        if(t.error){ syncLog("Google вернул ошибку: "+esc(t.error)+" "+esc(t.error_description||""),"er"); reset(); return; }
+        gToken=t.access_token; syncLog("Вход выполнен.","ok"); doSync(); },
+      error_callback:err=>{ done=true;
+        const t=(err&&err.type)||"";
+        if(t==="popup_failed_to_open")
+          syncLog("Всплывающее окно не открылось — браузер его заблокировал. Разрешите всплывающие окна для этого сайта и нажмите кнопку снова.","er");
+        else if(t==="popup_closed")
+          syncLog("Окно входа закрыто до подтверждения.","wa");
+        else
+          syncLog("Вход не удался: "+esc(t||"причина неизвестна")+". "+esc((err&&err.message)||""),"er");
+        reset(); }
+    });
+  }
+  try{ gTokenClient.requestAccessToken(); }
+  catch(e){ done=true; syncLog("Не смог запросить доступ: "+esc(e.message),"er"); reset(); return; }
+  setTimeout(()=>{ if(!done){
+    syncLog("Окно входа так и не ответило. Частые причины:","wa");
+    syncLog("• браузер заблокировал всплывающее окно — разрешите их для этого сайта;");
+    syncLog("• в OAuth-клиенте не указан источник <code>https://muninser-star.github.io</code> в Authorized JavaScript origins;");
+    syncLog("• клиент создан не как «Веб-приложение», а другого типа — тогда всплывающее окно не открывается;");
+    syncLog("• расширение приватности блокирует accounts.google.com.");
+    reset(); } },6000);
 });
 
 function render(){
