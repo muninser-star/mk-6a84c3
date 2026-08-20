@@ -2791,7 +2791,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 20:04";   // подставляется при публикации
+const BUILD="20.08 20:05";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3376,8 +3376,8 @@ function render(){
         body=E.length?`<div class="card"><h2>Болезни <span class="muted" style="text-transform:none">— ${E.length}</span></h2>
           <p class="muted" style="margin:-4px 0 10px">Эпизод — болезнь целиком, от первого признака до выздоровления.
           «Не закрыто» значит, что дата окончания не проставлена, а с начала прошло больше 30 дней: либо забыли закрыть, либо тянется до сих пор.</p>
-          ${pendingCount()?`<div class="verdict wa" style="background:var(--warnbg);color:var(--warn);cursor:pointer" id="pendBar">
-            Правок сохранено здесь, но ещё не в таблице: ${pendingCount()}. Они не потеряются — уйдут при первой удачной синхронизации. Нажмите, чтобы посмотреть список</div>`:""}
+          ${pendingCount()?`<div class="muted" style="font-size:12px;margin:-4px 0 8px;cursor:pointer" id="pendBar">
+            ● ${pendingCount()} правки сохранены в этом браузере и ждут отправки в таблицу — посмотреть</div>`:""}
           ${open.length?`<div class="verdict up">Не закрыто: ${open.length} — ${esc(open.map(x=>x.dx).join("; "))}</div>`:""}
           <div class="tw" style="margin-top:10px"><table><thead><tr><th>Болезнь</th><th>Начало</th><th>Конец</th><th>Длилось</th><th>Симптомы</th><th>Как протекало</th></tr></thead><tbody>
           ${E.map(x=>{const o=epOpen(x,today), dd=epDays(x,today), sy=epSyms(x,S.log);
