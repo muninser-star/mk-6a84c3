@@ -2728,50 +2728,47 @@ async function doSync(){
   }catch(e){ syncLog("Не получилось: "+esc(e.message),"er"); }
   finally{ const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
 }
+// клиент создаём заранее, при загрузке: если делать это в обработчике клика,
+// GIS дозагружается асинхронно, жест пользователя теряется и всплывающее окно не открывается
+function gInit(){
+  if(gTokenClient||!G_CLIENT_ID) return true;
+  if(typeof google==="undefined"||!google.accounts||!google.accounts.oauth2) return false;
+  gTokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:G_CLIENT_ID, scope:G_SCOPES,
+    callback:t=>{ gBusy=false;
+      if(t.error){ syncModal(); syncLog("Google вернул ошибку: "+esc(t.error)+" "+esc(t.error_description||""),"er"); gReset(); return; }
+      gToken=t.access_token; syncModal(); syncLog("Вход выполнен, обновляю таблицы…","ok"); doSync(); },
+    error_callback:err=>{ gBusy=false; const ty=(err&&err.type)||"";
+      syncModal();
+      if(ty==="popup_closed") syncLog("Окно входа закрыто до подтверждения.","wa");
+      else if(ty==="popup_failed_to_open") syncLog("Браузер не дал открыть окно входа. Разрешите всплывающие окна для этого сайта.","er");
+      else syncLog("Вход не удался: "+esc(ty||"причина неизвестна")+" "+esc((err&&err.message)||""),"er");
+      gReset(); }
+  });
+  return true;
+}
+function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
+let gBusy=false;
+(function waitG(n){ if(gInit()||n>60) return; setTimeout(()=>waitG(n+1),250); })(0);
+
 document.getElementById("sync").addEventListener("click",()=>{
   if(!G_CLIENT_ID){
     syncModal();
-    syncLog(`Кнопка ещё не настроена — нет идентификатора приложения.`,"wa");
-    syncLog(`Что сделать один раз: в console.cloud.google.com создать OAuth-клиент типа
-      «Веб-приложение», в разрешённые источники вписать <code>https://muninser-star.github.io</code>,
-      скопировать Client ID и сказать его мне — я подставлю в книжку. Он публичный, это не секрет.
-      Подробности — в файле «Синхронизация базы.md».`);
+    syncLog("Кнопка ещё не настроена — нет идентификатора приложения.","wa");
     return;
   }
-  syncModal(); syncLog("Открываю вход в Google…");
+  if(!gInit()){
+    syncModal();
+    syncLog("Библиотека входа Google ещё не загрузилась. Подождите пару секунд и нажмите снова. Если не проходит — её блокирует расширение приватности или блокировщик рекламы.","er");
+    return;
+  }
+  if(gBusy) return;
+  gBusy=true;
   const b=document.getElementById("sync"); b.disabled=true; b.textContent="Синхронизирую…";
-  const reset=()=>{b.disabled=false;b.textContent="⟳ Синхронизировать";};
-  if(typeof google==="undefined"||!google.accounts||!google.accounts.oauth2){
-    syncLog("Библиотека входа Google не загрузилась. Обычно это блокировщик рекламы или расширение приватности — отключите его для этой страницы и обновите.","er");
-    reset(); return;
-  }
-  let done=false;
-  if(!gTokenClient){
-    gTokenClient=google.accounts.oauth2.initTokenClient({
-      client_id:G_CLIENT_ID, scope:G_SCOPES,
-      callback:t=>{ done=true;
-        if(t.error){ syncLog("Google вернул ошибку: "+esc(t.error)+" "+esc(t.error_description||""),"er"); reset(); return; }
-        gToken=t.access_token; syncLog("Вход выполнен.","ok"); doSync(); },
-      error_callback:err=>{ done=true;
-        const t=(err&&err.type)||"";
-        if(t==="popup_failed_to_open")
-          syncLog("Всплывающее окно не открылось — браузер его заблокировал. Разрешите всплывающие окна для этого сайта и нажмите кнопку снова.","er");
-        else if(t==="popup_closed")
-          syncLog("Окно входа закрыто до подтверждения.","wa");
-        else
-          syncLog("Вход не удался: "+esc(t||"причина неизвестна")+". "+esc((err&&err.message)||""),"er");
-        reset(); }
-    });
-  }
+  // запрос доступа — первым действием, пока жест пользователя ещё «свежий»
   try{ gTokenClient.requestAccessToken(); }
-  catch(e){ done=true; syncLog("Не смог запросить доступ: "+esc(e.message),"er"); reset(); return; }
-  setTimeout(()=>{ if(!done){
-    syncLog("Окно входа так и не ответило. Частые причины:","wa");
-    syncLog("• браузер заблокировал всплывающее окно — разрешите их для этого сайта;");
-    syncLog("• в OAuth-клиенте не указан источник <code>https://muninser-star.github.io</code> в Authorized JavaScript origins;");
-    syncLog("• клиент создан не как «Веб-приложение», а другого типа — тогда всплывающее окно не открывается;");
-    syncLog("• расширение приватности блокирует accounts.google.com.");
-    reset(); } },6000);
+  catch(e){ gBusy=false; syncModal(); syncLog("Не смог запросить доступ: "+esc(e.message),"er"); gReset(); return; }
+  syncModal(); syncLog("Открываю вход в Google… Если окно не появилось, проверьте, не заблокировал ли его браузер.");
 });
 
 function render(){
