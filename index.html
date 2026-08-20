@@ -2605,6 +2605,18 @@ function medHits(log,name){
     return key===n||one.toLowerCase()===n;
   }));
 }
+// Карту начинаем с 2022 года: раньше записи единичные и растягивают полосу впустую.
+// Если все записи старше 2022 — начинаем с первой, иначе нечего было бы показывать.
+const MAPFROM="2022-01-01";
+function mapStart(list){
+  if(!list||!list.length) return null;
+  const first=list[list.length-1].d;
+  if(first>=MAPFROM) return first;
+  return list.some(x=>x.d>=MAPFROM) ? MAPFROM : first;
+}
+function hiddenBefore(list){
+  return (list||[]).filter(x=>x.d<MAPFROM).length;
+}
 function epSyms(ep,log){
   const key=ep.as||ep.dx||"";
   const fromLog=[...new Set((log||[]).filter(x=>x.d===ep.d1&&(x.p||"")===key).map(x=>x.n))];
@@ -2841,7 +2853,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 20:11";   // подставляется при публикации
+const BUILD="20.08 20:24";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3320,7 +3332,7 @@ function render(){
     const byName={}; names.forEach(n=>byName[n]=S.log.filter(x=>x.n===n));
     const seen=names.filter(n=>byName[n].length).sort((a,b)=>byName[b].length-byName[a].length);
     const never=S.cat.filter(c=>!byName[c.n].length);
-    const since=S.log.length?S.log[S.log.length-1].d:null;
+    const since=mapStart(S.log);
     const catOf=n=>S.cat.find(c=>c.n===n)||{};
 
     // ---------- карточка препарата ----------
@@ -3457,7 +3469,8 @@ function render(){
       else if(symView==="strip"){
         body=`<div class="card"><h2>Когда просыпалось и когда затихало</h2>
           <p class="muted" style="margin:-4px 0 10px">Клетка — месяц, чем плотнее заливка, тем чаще. Пустая клетка — тишина.
-          Полосы прокручиваются вбок, шкала у всех общая. Нажмите название — откроется симптом целиком.</p>
+          Полосы прокручиваются вбок, шкала у всех общая. Нажмите название — откроется симптом целиком.
+          ${hiddenBefore(S.log)?`<br>Карта начинается с ${MAPFROM.slice(0,4)} года. Записей раньше: ${hiddenBefore(S.log)} — они есть в журнале и в карточке симптома.`:""}</p>
           <div class="stripwrap">
             ${seen.map(n=>`<div class="striprow"><div class="nm" data-sym="${esc(n)}">${esc(n)}</div><div>${monthStrip(byName[n],since)}</div></div>`).join("")}
             <div class="striprow" style="border:0"><div class="nm"></div><div>${monthAxis(since)}</div></div>
