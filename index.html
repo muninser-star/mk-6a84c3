@@ -2750,7 +2750,9 @@ let gToken=null;
 async function doSync(){
   const T=buildTables(), names=Object.keys(T);
   try{
-    syncLog("Ищу таблицы в папке…");
+    const sent=await qFlush();
+  if(sent) syncLog(`Отправил накопленные правки: ${sent}`,"ok");
+  syncLog("Ищу таблицы в папке…");
     const q=encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`);
     const list=await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=200`);
     const byName={}; list.files.forEach(f=>byName[f.name]=f.id);
@@ -2787,6 +2789,18 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
+const QKEY="mkQueue";
+function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
+function qPush(sheet,row){ const arr=qLoad(); arr.push({sheet,row}); try{ localStorage.setItem(QKEY,JSON.stringify(arr)); }catch(e){} }
+async function qFlush(){
+  let arr=qLoad(), n=0;
+  while(arr.length){
+    try{ await gAppend(arr[0].row,arr[0].sheet); arr.shift(); n++;
+      localStorage.setItem(QKEY,JSON.stringify(arr)); }
+    catch(e){ break; }
+  }
+  return n;
+}
 function ovLoad(){ try{ return JSON.parse(localStorage.getItem(OVKEY)||'{"ren":{},"add":[]}'); }catch(e){ return {ren:{},add:[]}; } }
 function ovSave(o){ try{ localStorage.setItem(OVKEY,JSON.stringify(o)); }catch(e){} }
 function ovRename(epId,name){ const o=ovLoad(); o.ren[epId]=name; ovSave(o); ovApply(); }
@@ -2912,7 +2926,6 @@ function editEpForm(epId){
       </div>
       <div class="row">
         <button class="btn" id="edOk">Сохранить</button>
-        <button class="btn sec" id="edLocal">Только здесь, без входа</button>
         <button class="btn sec" data-close>Отмена</button>
       </div>
       <p class="note">Правка уйдёт в таблицу «${esc(EDITS)}» на Диске — синхронизация её не затирает.
@@ -2920,28 +2933,20 @@ function editEpForm(epId){
       <div id="edLog" class="synclog"></div>
     </div></div>`;
   const log=(t,c)=>{const e=document.getElementById("edLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
-  document.getElementById("edLocal").addEventListener("click",()=>{
-    const nm=(document.getElementById("edName").value||"").trim();
-    if(!nm){ log("Название не может быть пустым.","er"); return; }
-    ovRename(ep.id,nm); render();
-    log("✓ Название сменилось и сохранится в этом браузере.","ok");
-    log("В таблицу на Диске не ушло. Чтобы я увидел правку, нажмите «Синхронизировать» с компьютера или войдите здесь.","wa");
-  });
   document.getElementById("edOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("edName").value||"").trim();
     if(!nm){ log("Название не может быть пустым.","er"); return; }
     if(nm===(ep.dx||"")){ log("Название не изменилось.","wa"); return; }
     const row=[new Date().toISOString().slice(0,10), d.short, ep.id, ep.d1, "Болезнь", ep.dx||"", nm, "нет"];
     document.getElementById("edOk").disabled=true;
+    ovRename(ep.id,nm); render();
+    log("✓ Готово. Название сменилось и сохранится в этом браузере.","ok");
     if(!gToken){
-      sessionStorage.setItem("pendingEdit",JSON.stringify(row));
-      gWhere();
-      log("Нужно войти в Google — перехожу…");
-      location.href=gAuthUrl("edit"); return;
+      qPush(EDITS,row);
+      log("На Диск уйдёт при следующей синхронизации — входить сейчас не нужно.","wa");
+      return;
     }
-    try{ await gAppend(row,EDITS); ovRename(ep.id,nm); render();
-      log("✓ Готово. Название уже сменилось в книжке.","ok");
-      log("Правка сохранится и после закрытия вкладки. Точкой отмечено, что она ещё не в реестре — я перенесу.","wa"); }
+    try{ await gAppend(row,EDITS); log("Записано и в таблицу на Диске.","ok"); }
     catch(e){ log("Не получилось: "+esc(e.message),"er"); document.getElementById("edOk").disabled=false; }
   });
 }
@@ -2975,7 +2980,6 @@ function addSymForm(epId){
       </div>
       <div class="row">
         <button class="btn" id="asOk">Записать</button>
-        <button class="btn sec" id="asLocal">Только здесь, без входа</button>
         <button class="btn sec" data-close>Отмена</button>
       </div>
       <p class="note">Запись уйдёт в таблицу «${esc(INBOX)}» на Диске — синхронизация её не затирает.
@@ -2983,17 +2987,6 @@ function addSymForm(epId){
       <div id="asLog" class="synclog"></div>
     </div></div>`;
   const log=(t,c)=>{const e=document.getElementById("asLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
-  document.getElementById("asLocal").addEventListener("click",()=>{
-    const nm=(document.getElementById("asName").value||"").trim();
-    if(!nm){ log("Впишите название симптома.","er"); return; }
-    const c=S.cat.find(z=>z.n===nm);
-    ovAdd({who:cur,d:ep.d1,n:nm,p:ep.as||ep.dx||"",sys:c?c.sys:"other",
-      i:(document.getElementById("asInt").value||"")?+document.getElementById("asInt").value:null,
-      f:(document.getElementById("asNote").value||"").trim()});
-    render();
-    log("✓ Симптом добавлен и сохранится в этом браузере.","ok");
-    log("В таблицу на Диске не ушло. Чтобы я его увидел, нажмите «Синхронизировать» с компьютера или войдите здесь.","wa");
-  });
   document.getElementById("asOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("asName").value||"").trim();
     if(!nm){ log("Впишите название симптома.","er"); return; }
@@ -3001,11 +2994,18 @@ function addSymForm(epId){
       nm, (document.getElementById("asInt").value||"").trim(),
       (document.getElementById("asNote").value||"").trim(), "нет"];
     document.getElementById("asOk").disabled=true;
+    const c0=S.cat.find(z=>z.n===nm);
+    ovAdd({who:cur,d:ep.d1,n:nm,p:ep.as||ep.dx||"",sys:c0?c0.sys:"other",
+      i:(document.getElementById("asInt").value||"")?+document.getElementById("asInt").value:null,
+      f:(document.getElementById("asNote").value||"").trim()});
+    render();
+    log("✓ Готово. Симптом добавлен и сохранится в этом браузере.","ok");
     if(!gToken){
-      sessionStorage.setItem("pendingAdd",JSON.stringify(row));
-      gWhere();
-      log("Нужно войти в Google — перехожу…");
-      location.href=gAuthUrl("add"); return;
+      qPush(INBOX,row);
+      log("На Диск уйдёт при следующей синхронизации — входить сейчас не нужно.","wa");
+      document.getElementById("asOk").disabled=false;
+      document.getElementById("asName").value="";
+      return;
     }
     const key=row.slice(1,6).join("|");
     if(sessionStorage.getItem("lastAdd")===key){
@@ -3013,12 +3013,7 @@ function addSymForm(epId){
       document.getElementById("asOk").disabled=false; return;
     }
     try{ await gAppend(row); sessionStorage.setItem("lastAdd",key);
-      const c=S.cat.find(z=>z.n===nm);
-      ovAdd({who:cur,d:ep.d1,n:nm,p:ep.as||ep.dx||"",sys:c?c.sys:"other",
-             i:(document.getElementById("asInt").value||"")?+document.getElementById("asInt").value:null,
-             f:(document.getElementById("asNote").value||"").trim()});
-      render();
-      log("✓ Готово. Симптом уже виден в книжке.","ok");
+      log("Записано и в таблицу на Диске.","ok");
       const f=document.getElementById("asName"); if(f) f.value="";
       const i=document.getElementById("asInt"); if(i) i.value="";
       const nt=document.getElementById("asNote"); if(nt) nt.value="";
