@@ -2790,6 +2790,44 @@ function gAuthUrl(st){
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
 const QKEY="mkQueue";
+// Правки, ещё не уехавшие на Диск. Показываем текстом, чтобы можно было
+// скопировать и прислать мне — это работает на любом устройстве, без входа.
+function pendingText(){
+  const q=qLoad(), o=ovLoad(), L=[];
+  q.forEach(it=>{
+    const r=it.row;
+    if(it.sheet===EDITS) L.push(`переименовать: ${r[1]}, эпизод ${r[3]} «${r[5]}» → «${r[6]}»`);
+    else L.push(`добавить симптом: ${r[1]}, эпизод ${r[3]} (${r[4]}) — ${r[5]}${r[6]?", интенсивность "+r[6]:""}${r[7]?", "+r[7]:""}`);
+  });
+  if(!L.length){
+    for(const [id,nm] of Object.entries(o.ren||{})) L.push(`переименовать: эпизод ${id} → «${nm}»`);
+    (o.add||[]).forEach(x=>L.push(`добавить симптом: ${x.who}, ${x.d} (${x.p}) — ${x.n}${x.i?", интенсивность "+x.i:""}`));
+  }
+  return L;
+}
+function pendingCount(){ return qLoad().length || (Object.keys(ovLoad().ren||{}).length + (ovLoad().add||[]).length); }
+function showPending(){
+  const L=pendingText();
+  modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
+    <h2>Правки для переноса</h2>
+    ${L.length?`<p class="muted" style="margin:-4px 0 10px">Эти изменения сделаны в этом браузере и ещё не уехали на Диск.
+      Скопируйте и пришлите мне — я внесу в реестр. Работает без входа в Google.</p>
+      <textarea id="pendTa" style="width:100%;height:150px;padding:10px;border:1px solid var(--line);
+        border-radius:9px;font:inherit;font-size:13px;background:var(--card);color:var(--ink)"
+        readonly>${esc(L.join("\n"))}</textarea>
+      <div class="row" style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" id="pendCopy" style="border:0;background:var(--accent);color:#fff;padding:10px 22px;border-radius:9px;cursor:pointer;font:inherit;font-weight:600">Скопировать</button>
+      </div>`
+    :`<p style="margin:0">Всё перенесено — ничего не ждёт отправки.</p>`}
+    </div>`;
+  modal.classList.add("on");
+  const b=document.getElementById("pendCopy");
+  if(b) b.addEventListener("click",()=>{
+    const t=document.getElementById("pendTa"); t.select(); t.setSelectionRange(0,99999);
+    try{ navigator.clipboard.writeText(t.value); b.textContent="Скопировано ✓"; }
+    catch(e){ document.execCommand("copy"); b.textContent="Скопировано ✓"; }
+  });
+}
 function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
 function qPush(sheet,row){ const arr=qLoad(); arr.push({sheet,row}); try{ localStorage.setItem(QKEY,JSON.stringify(arr)); }catch(e){} }
 async function qFlush(){
@@ -3028,7 +3066,9 @@ const inApp=/(FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger|VKClient|TelegramB
 document.getElementById("sync").addEventListener("click",()=>{
   if(inApp){ syncModal();
     syncLog("Похоже, страница открыта внутри мессенджера, а не в браузере. Google в таких окнах вход не разрешает.","er");
-    syncLog("Откройте книжку в Safari или Chrome — в меню окна есть «Открыть в браузере». Либо правьте кнопкой «Только здесь, без входа», а синхронизацию сделайте с компьютера.","wa");
+    syncLog("Откройте книжку в Safari или Chrome — в меню окна есть «Открыть в браузере».","wa");
+    if(pendingCount()) syncLog(`<button class="gobtn" id="pendBtn">Показать ${pendingCount()} правок текстом</button>`);
+    const pb=document.getElementById("pendBtn"); if(pb) pb.addEventListener("click",showPending);
     return; }
   if(!G_CLIENT_ID){ syncModal(); syncLog("Кнопка не настроена — нет идентификатора приложения.","wa"); return; }
   syncModal();
@@ -3309,6 +3349,8 @@ function render(){
         body=E.length?`<div class="card"><h2>Болезни <span class="muted" style="text-transform:none">— ${E.length}</span></h2>
           <p class="muted" style="margin:-4px 0 10px">Эпизод — болезнь целиком, от первого признака до выздоровления.
           «Не закрыто» значит, что дата окончания не проставлена, а с начала прошло больше 30 дней: либо забыли закрыть, либо тянется до сих пор.</p>
+          ${pendingCount()?`<div class="verdict wa" style="background:var(--warnbg);color:var(--warn);cursor:pointer" id="pendBar">
+            Правок в этом браузере, не уехавших на Диск: ${pendingCount()} — нажмите, чтобы скопировать и прислать мне</div>`:""}
           ${open.length?`<div class="verdict up">Не закрыто: ${open.length} — ${esc(open.map(x=>x.dx).join("; "))}</div>`:""}
           <div class="tw" style="margin-top:10px"><table><thead><tr><th>Болезнь</th><th>Начало</th><th>Конец</th><th>Длилось</th><th>Симптомы</th><th>Как протекало</th></tr></thead><tbody>
           ${E.map(x=>{const o=epOpen(x,today), dd=epDays(x,today), sy=epSyms(x,S.log);
@@ -3696,6 +3738,7 @@ document.addEventListener("click",e=>{
 
   const w=e.target.closest("[data-w]"); if(w){cur=w.dataset.w;sysFilter=null;symSel=null;medSel=null;symView="list";tab="home";closeModal();render();return}
   const sv=e.target.closest("[data-symview]"); if(sv){symView=sv.dataset.symview;symSel=null;medSel=null;render();window.scrollTo({top:0});return}
+  if(e.target.closest("#pendBar")){ showPending(); return; }
   const ed=e.target.closest(".editep"); if(ed){ e.stopPropagation(); editEpForm(ed.dataset.ep); return; }
   const as=e.target.closest(".addsym"); if(as){ e.stopPropagation(); addSymForm(as.dataset.ep); return; }
   const mw=e.target.closest("[data-medwho]");
