@@ -2365,6 +2365,42 @@ function tableRows(list,opt){
 }
 
 // ── Карточка записи
+// Подсветка числа в строке протокола: сравниваем с нормой, если она указана рядом.
+// Норму пишут по-разному, поэтому разбираем несколько привычных форм.
+function num(x){ return parseFloat(String(x).replace(",", ".")); }
+function markVal(txt){
+  const t=String(txt);
+  if(/⚠️|НЕ ВЫПОЛНЕН|не выполнен|НЕТ ДАННЫХ/i.test(t)) return {c:"var(--warn)",why:"требует внимания"};
+  const v0=t.match(/^\s*(-?\d+[.,]?\d*)/);
+  if(!v0) return null;
+  const v=num(v0[1]); if(isNaN(v)) return null;
+  let lo=null, hi=null;
+  let m=t.match(/при норме\s*(?:до|не более|менее|<)\s*(\d+[.,]?\d*)/i);
+  if(m){ hi=num(m[1]); }
+  if(hi===null){ m=t.match(/при норме\s*(?:от|более|>)\s*(\d+[.,]?\d*)/i); if(m) lo=num(m[1]); }
+  if(hi===null&&lo===null){
+    m=t.match(/(?:при\s+)?норм[аеы][^\d]{0,12}(\d+[.,]?\d*)\s*[–—-]\s*(\d+[.,]?\d*)/i);
+    if(m){ lo=num(m[1]); hi=num(m[2]); }
+  }
+  if(hi===null&&lo===null){
+    m=t.match(/норма\s*(\d+[.,]?\d*)\s*[–—-]\s*(\d+[.,]?\d*)/i);
+    if(m){ lo=num(m[1]); hi=num(m[2]); }
+  }
+  if(hi===null&&lo===null){
+    if(/\bнорма\b|без отклонений|не изменен|не расширен|не увеличен/i.test(t)) return {c:"var(--ok)",why:"в норме"};
+    return null;
+  }
+  const okHi = hi===null || v<=hi;
+  const okLo = lo===null || v>=lo;
+  if(okHi&&okLo){
+    // у самой границы — жёлтый, а не зелёный: это ещё норма, но уже край
+    const edge = (hi!==null && v>=hi*0.95) || (lo!==null && v<=lo*1.05);
+    return edge ? {c:"var(--warn)",why:"на границе нормы"} : {c:"var(--ok)",why:"в норме"};
+  }
+  const ref = hi!==null && v>hi ? hi : lo;
+  const off = Math.abs(v-ref)/(Math.abs(ref)||1);
+  return off<=0.1 ? {c:"var(--warn)",why:"немного вне нормы"} : {c:"var(--bad)",why:"вне нормы"};
+}
 function openRec(i,showSer){
   const D=DATA[cur], r=D.rec[i]; if(!r)return;
   const o=organOf(r.sys);
@@ -2424,8 +2460,13 @@ function openRec(i,showSer){
         </tbody></table></div>`:""}
 
       ${r.full?`<h3 style="font-size:14px;margin:18px 0 6px">Что в заключении целиком</h3>
+        <div class="legend" style="margin:0 0 8px"><span><i style="background:var(--ok)"></i>в норме</span>
+          <span><i style="background:var(--warn)"></i>на границе или чуть вне</span>
+          <span><i style="background:var(--bad)"></i>вне нормы</span>
+          <span class="muted">без цвета — норма в документе не указана</span></div>
         <div class="tw"><table><tbody>${r.full.map(f=>Array.isArray(f)
-          ?`<tr><td class="muted" style="width:42%">${esc(f[0])}</td><td><b>${esc(f[1])}</b>${f[2]?` <span class="muted" style="font-weight:400">${esc(f[2])}</span>`:""}</td></tr>`
+          ?(()=>{const mk=markVal(f[1]);
+            return `<tr><td class="muted" style="width:42%">${esc(f[0])}</td><td><b${mk?` style="color:${mk.c}" title="${esc(mk.why)}"`:""}>${esc(f[1])}</b>${f[2]?` <span class="muted" style="font-weight:400">${esc(f[2])}</span>`:""}</td></tr>`;})()
           :`<tr><td colspan="2">${esc(f)}</td></tr>`).join("")}</tbody></table></div>`:""}
 
       ${sameDay.length?`<h3 style="font-size:14px;margin:18px 0 6px">В этот же день, ${ru(r.d)} — ещё ${sameDay.length}</h3>
@@ -2853,7 +2894,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 22:02";   // подставляется при публикации
+const BUILD="20.08 22:10";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
