@@ -82,6 +82,7 @@ tr:last-child td{border-bottom:0}
   width:22px;height:22px;line-height:1;font-size:15px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:-3px;padding:0}
 .addsym:hover{border-color:var(--accent);background:var(--accentbg)}
 .editep{color:var(--muted);font-size:13px}
+.pend{color:var(--warn);font-size:11px;vertical-align:2px}
 .addform{max-width:100%}
 .addform .fld{margin-top:14px}
 .addform label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
@@ -2783,6 +2784,36 @@ function gAuthUrl(st){
   });
   return "https://accounts.google.com/o/oauth2/v2/auth?"+p.toString();
 }
+// ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
+// и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
+const OVKEY="mkOverlay";
+function ovLoad(){ try{ return JSON.parse(localStorage.getItem(OVKEY)||'{"ren":{},"add":[]}'); }catch(e){ return {ren:{},add:[]}; } }
+function ovSave(o){ try{ localStorage.setItem(OVKEY,JSON.stringify(o)); }catch(e){} }
+function ovRename(epId,name){ const o=ovLoad(); o.ren[epId]=name; ovSave(o); ovApply(); }
+function ovAdd(rec){ const o=ovLoad(); o.add.push(rec); ovSave(o); ovApply(); }
+
+function ovApply(){
+  const o=ovLoad(); let dirty=false;
+  for(const k of Object.keys(DATA)){
+    const S=DATA[k].sym; if(!S) continue;
+    (S.ep||[]).forEach(e=>{
+      const nm=o.ren[e.id]; if(!nm) return;
+      if(e.dx===nm){ delete o.ren[e.id]; dirty=true; return; }   // уже в реестре — наложение не нужно
+      if(!e._base) e._base=e.dx;
+      e.dx=nm; e.pending=1;
+    });
+  }
+  o.add=(o.add||[]).filter(a=>{
+    const S=(DATA[a.who]||{}).sym; if(!S) return false;
+    const has=(S.log||[]).some(x=>x.d===a.d&&x.n===a.n&&(x.p||"")===(a.p||""));
+    if(has){ dirty=true; return false; }                         // уже в реестре
+    S.log.push({d:a.d,n:a.n,sys:a.sys||"other",i:a.i??null,v:null,u:"",
+      f:a.f||"",m:"",h:"",p:a.p||"",pending:1});
+    S.log.sort((x,y)=>y.d.localeCompare(x.d));
+    return true;
+  });
+  if(dirty) ovSave(o);
+}
 function gWhere(){
   try{ sessionStorage.setItem("gWhere",JSON.stringify({cur,tab,symView,symSel,medSel})); }catch(e){}
 }
@@ -2820,7 +2851,8 @@ function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=fal
     if(gBackWhere()) render();
     syncModal(); syncLog("Вход выполнен, записываю правку…","ok");
     try{ const r=JSON.parse(raw); await gAppend(r,EDITS);
-      syncLog(`<b>✓ Название «${esc(r[6])}» сохранено.</b>`,"ok");
+      ovRename(r[2],r[6]); render();
+      syncLog(`<b>✓ Название «${esc(r[6])}» сохранено и уже стоит в книжке.</b>`,"ok");
       syncLog(`Правка лежит в таблице «${esc(EDITS)}» и ждёт переноса. В книжке название сменится после переноса — повторять не нужно.`);
     } catch(e){ syncLog("Не получилось: "+esc(e.message),"er"); }
   },50);
@@ -2830,7 +2862,8 @@ function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=fal
     if(gBackWhere()) render();
     syncModal(); syncLog("Вход выполнен, дописываю симптом…","ok");
     try{ const r=JSON.parse(raw); await gAppend(r);
-      syncLog(`<b>✓ Симптом «${esc(r[5])}» записан.</b>`,"ok");
+      ovAdd({who:cur,d:r[3],n:r[5],p:r[4]||"",sys:"other",i:r[6]?+r[6]:null,f:r[7]||""}); render();
+      syncLog(`<b>✓ Симптом «${esc(r[5])}» записан и уже виден в книжке.</b>`,"ok");
       syncLog(`Он лежит в таблице «${esc(INBOX)}» на Диске и ждёт переноса в реестр. В книжке появится после того, как я его перенесу — повторно добавлять не нужно.`);
     } catch(e){ syncLog("Не получилось: "+esc(e.message),"er"); }
   },50);
@@ -2898,7 +2931,9 @@ function editEpForm(epId){
       log("Нужно войти в Google — перехожу…");
       location.href=gAuthUrl("edit"); return;
     }
-    try{ await gAppend(row,EDITS); log("✓ Правка записана. Перенесу в реестр — и название сменится.","ok"); }
+    try{ await gAppend(row,EDITS); ovRename(ep.id,nm); render();
+      log("✓ Готово. Название уже сменилось в книжке.","ok");
+      log("Правка сохранится и после закрытия вкладки. Точкой отмечено, что она ещё не в реестре — я перенесу.","wa"); }
     catch(e){ log("Не получилось: "+esc(e.message),"er"); document.getElementById("edOk").disabled=false; }
   });
 }
@@ -2957,7 +2992,13 @@ function addSymForm(epId){
       log("Такой симптом уже записан минуту назад — повтор не нужен.","wa");
       document.getElementById("asOk").disabled=false; return;
     }
-    try{ await gAppend(row); sessionStorage.setItem("lastAdd",key); log("✓ Записано в «"+esc(INBOX)+"»","ok");
+    try{ await gAppend(row); sessionStorage.setItem("lastAdd",key);
+      const c=S.cat.find(z=>z.n===nm);
+      ovAdd({who:cur,d:ep.d1,n:nm,p:ep.as||ep.dx||"",sys:c?c.sys:"other",
+             i:(document.getElementById("asInt").value||"")?+document.getElementById("asInt").value:null,
+             f:(document.getElementById("asNote").value||"").trim()});
+      render();
+      log("✓ Готово. Симптом уже виден в книжке.","ok");
       const f=document.getElementById("asName"); if(f) f.value="";
       const i=document.getElementById("asInt"); if(i) i.value="";
       const nt=document.getElementById("asNote"); if(nt) nt.value="";
@@ -3251,14 +3292,15 @@ function render(){
           <div class="tw" style="margin-top:10px"><table><thead><tr><th>Болезнь</th><th>Начало</th><th>Конец</th><th>Длилось</th><th>Симптомы</th><th>Как протекало</th></tr></thead><tbody>
           ${E.map(x=>{const o=epOpen(x,today), dd=epDays(x,today), sy=epSyms(x,S.log);
             return `<tr class="eprow"${o?' style="background:var(--badbg)"':""}>
-              <td><b>${esc(x.dx||"без диагноза")}</b>
+              <td><b>${esc(x.dx||"без диагноза")}</b>${x.pending?' <span class="pend" title="Изменено в книжке, ждёт переноса в реестр">●</span>':""}
                 <button class="addsym editep" data-ep="${esc(x.id)}" title="Переименовать болезнь">✎</button>
                 ${x.ab?' <span class="tag2" style="background:var(--warnbg);color:var(--warn)">антибиотик</span>':""}
                 ${x.as?`<div class="muted" style="font-size:12px">записано как «${esc(x.as)}»</div>`:""}</td>
               <td class="muted">${ru(x.d1)}</td>
               <td class="muted">${x.d2?ru(x.d2):(o?'<b style="color:var(--bad)">не закрыто</b>':'<span class="muted">—</span>')}</td>
               <td>${x.d2?human(dd):(o?`<span class="muted">идёт ${human(dd)}</span>`:'<span class="muted">—</span>')}</td>
-              <td style="font-size:13px">${sy.length?sy.map(n=>`<span class="medlink" data-sym="${esc(n)}">${esc(n)}</span>`).join(", "):'<span class="muted">—</span>'}
+              <td style="font-size:13px">${sy.length?sy.map(n=>{const p=(S.log||[]).some(z=>z.n===n&&z.d===x.d&&z.pending);
+                  return `<span class="medlink" data-sym="${esc(n)}">${esc(n)}</span>${p?'<span class="pend" title="Добавлено в книжке, ждёт переноса в реестр">●</span>':""}`;}).join(", "):'<span class="muted">—</span>'}
                 <button class="addsym" data-ep="${esc(x.id)}" title="Добавить симптом к этой болезни">+</button></td>
               <td class="muted" style="font-size:13px;max-width:340px">${esc(x.t||"—")}</td></tr>`;}).join("")}
           </tbody></table></div></div>`
@@ -3652,6 +3694,7 @@ document.getElementById("q").addEventListener("input",e=>{
   if(query){sysFilter=null;tab="all";}   // поиск всегда по всему архиву
   render();
 });
+ovApply();
 render();
 </script>
 </body>
