@@ -2721,6 +2721,8 @@ async function gapi(url,opts,tries){
     catch(e){ if(n===max) throw new Error("сеть недоступна: "+e.message); await gPause(800*n); continue; }
     if(r.ok) return r.status===204?{}:r.json();
     const body=(await r.text()).slice(0,200);
+    if(r.status===401){ gToken=null; sessionStorage.removeItem("gTok");
+      throw new Error("сессия Google истекла — нажмите ещё раз, потребуется вход"); }
     if((r.status===429||r.status>=500)&&n<max){
       syncLog(`  Google ответил ${r.status}, жду ${n*2} с и повторяю…`,"wa");
       await gPause(n*2000); continue;
@@ -2766,6 +2768,15 @@ function gAuthUrl(st){
   });
   return "https://accounts.google.com/o/oauth2/v2/auth?"+p.toString();
 }
+function gSave(t,sec){
+  try{ sessionStorage.setItem("gTok",JSON.stringify({t,exp:Date.now()+(sec-120)*1000})); }catch(e){}
+}
+function gLoad(){
+  try{ const o=JSON.parse(sessionStorage.getItem("gTok")||"null");
+    if(o&&o.t&&o.exp>Date.now()){ gToken=o.t; return true; } }catch(e){}
+  sessionStorage.removeItem("gTok"); return false;
+}
+gLoad();
 function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
 
 // возврат с токеном в адресе
@@ -2775,7 +2786,7 @@ function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=fal
   const t=h.get("access_token"), st=h.get("state");
   history.replaceState(null,"",location.origin+location.pathname);
   if(!t){ return; }
-  gToken=t;
+  gToken=t; gSave(t, +(h.get("expires_in")||3600));
   if(st==="sync") setTimeout(()=>{ syncModal(); syncLog("Вход выполнен, обновляю таблицы…","ok"); doSync(); },50);
   if(st==="edit") setTimeout(async ()=>{
     const raw=sessionStorage.getItem("pendingEdit"); sessionStorage.removeItem("pendingEdit");
@@ -2823,7 +2834,7 @@ function editEpForm(epId){
   const ep=(S.ep||[]).find(x=>x.id===epId); if(!ep) return;
   const known=[...new Set((S.ep||[]).map(x=>x.dx).filter(x=>x&&!/не установлено|не уточнена|без диагноза/i.test(x)))].sort();
   modal.className="modal on";
-  modal.innerHTML=`<div class="box"><button class="x" data-close>✕</button>
+  modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
     <h2>Как назвать болезнь</h2>
     <p class="muted" style="margin:-4px 0 4px">${ru(ep.d1)}${ep.d2?" – "+ru(ep.d2):""}${ep.as?` · в дневнике записано как «${esc(ep.as)}»`:""}</p>
     <div class="addform">
@@ -2860,7 +2871,7 @@ function addSymForm(epId){
   const ep=(S.ep||[]).find(x=>x.id===epId); if(!ep) return;
   const names=[...new Set([...S.cat.map(x=>x.n),...S.log.map(x=>x.n)])].sort();
   modal.className="modal on";
-  modal.innerHTML=`<div class="box"><button class="x" data-close>✕</button>
+  modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
     <h2>Добавить симптом</h2>
     <p class="muted" style="margin:-4px 0 4px">${esc(ep.dx||"")} · ${ru(ep.d1)}${ep.d2?" – "+ru(ep.d2):""}</p>
     <div class="addform">
@@ -2891,7 +2902,12 @@ function addSymForm(epId){
       log("Нужно войти в Google — перехожу…");
       location.href=gAuthUrl("add"); return;
     }
-    try{ await gAppend(row); log("✓ Записано в «"+esc(INBOX)+"»","ok"); }
+    try{ await gAppend(row); log("✓ Записано в «"+esc(INBOX)+"»","ok");
+      const f=document.getElementById("asName"); if(f) f.value="";
+      const i=document.getElementById("asInt"); if(i) i.value="";
+      const nt=document.getElementById("asNote"); if(nt) nt.value="";
+      document.getElementById("asOk").disabled=false;
+      log("Можно добавить ещё один симптом к этой болезни.","wa"); }
     catch(e){ log("Не получилось: "+esc(e.message),"er"); document.getElementById("asOk").disabled=false; }
   });
 }
