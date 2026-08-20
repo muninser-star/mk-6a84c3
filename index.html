@@ -2730,10 +2730,11 @@ async function doSync(){
 }
 // Вход через переход на Google и возврат обратно (без всплывающих окон —
 // их блокируют браузеры и расширения, а на статическом хостинге обойти это нечем).
+const G_REDIRECT = "https://muninser-star.github.io/mk-6a84c3/";   // ровно этот адрес должен быть в Authorized redirect URIs
 function gAuthUrl(){
   const p=new URLSearchParams({
     client_id:G_CLIENT_ID,
-    redirect_uri:location.origin+location.pathname,
+    redirect_uri:G_REDIRECT,
     response_type:"token",
     scope:G_SCOPES,
     include_granted_scopes:"true",
@@ -2769,8 +2770,17 @@ function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=fal
 
 document.getElementById("sync").addEventListener("click",()=>{
   if(!G_CLIENT_ID){ syncModal(); syncLog("Кнопка не настроена — нет идентификатора приложения.","wa"); return; }
-  const b=document.getElementById("sync"); b.disabled=true; b.textContent="Перехожу в Google…";
-  location.href=gAuthUrl();
+  syncModal();
+  syncLog("Сейчас перейдём на страницу входа Google.");
+  syncLog(`Страница отправит вот такой адрес возврата. Он должен <b>посимвольно</b> совпадать
+    с одной из строк в поле <b>Authorized redirect URIs</b> вашего OAuth-клиента:`);
+  syncLog(`<code style="user-select:all;background:var(--nonebg);padding:3px 7px;border-radius:6px;display:inline-block;margin:4px 0">${esc(G_REDIRECT)}</code>`);
+  if(location.origin+location.pathname!==G_REDIRECT)
+    syncLog(`Кстати, сейчас книжка открыта по адресу <code>${esc(location.origin+location.pathname)}</code> —
+      это нормально, отправлен будет всё равно канонический адрес выше.`,"wa");
+  syncLog(`<button class="gobtn" id="gogoogle">Продолжить в Google →</button>`);
+  const go=document.getElementById("gogoogle");
+  if(go) go.addEventListener("click",()=>{ go.disabled=true; go.textContent="Перехожу…"; location.href=gAuthUrl(); });
 });
 
 function render(){
