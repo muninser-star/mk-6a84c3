@@ -2749,6 +2749,7 @@ async function gapi(url,opts,tries){
   }
 }
 let gToken=null;
+let syncAll=false;
 async function doSync(){
   const T=buildTables(), names=Object.keys(T);
   try{
@@ -2758,20 +2759,27 @@ async function doSync(){
     const q=encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`);
     const list=await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=200`);
     const byName={}; list.files.forEach(f=>byName[f.name]=f.id);
-    let ok=0; const miss=[];
+    const H=hLoad(); let ok=0, skip=0; const miss=[];
     for(const n of names){
       const id=byName[n];
       if(!id){ miss.push(n); continue; }
+      const h=hashOf(T[n]);
+      if(H[n]===h && !syncAll){ skip++; continue; }          // содержимое не менялось
       await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A1:ZZ20000:clear`,{method:"POST"});
       await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A1?valueInputOption=RAW`,
         {method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({values:T[n]})});
+      H[n]=h; hSave(H);
       syncLog(`✓ ${esc(n)} — ${T[n].length-1} строк`,"ok"); ok++;
       await gPause(400);
     }
-    syncLog(`<b>Обновлено таблиц: ${ok} из ${names.length}</b>`,"ok");
+    if(skip) syncLog(`Без изменений, пропущено: ${skip}`);
+    syncLog(ok?`<b>Обновлено таблиц: ${ok}</b>`:`<b>Всё уже совпадает — переписывать нечего.</b>`,"ok");
+    if(!ok&&!syncAll) syncLog(`<button class="gobtn" id="forceAll">Переписать всё заново</button>`);
+    const fa=document.getElementById("forceAll");
+    if(fa) fa.addEventListener("click",()=>{ syncAll=true; syncModal(); doSync(); });
     if(miss.length) syncLog("На Диске нет таких таблиц, их нужно создать один раз:<br>"+miss.map(esc).join("<br>"),"wa");
   }catch(e){ syncLog("Не получилось: "+esc(e.message),"er"); }
-  finally{ const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
+  finally{ syncAll=false; const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
 }
 // Вход через переход на Google и возврат обратно (без всплывающих окон —
 // их блокируют браузеры и расширения, а на статическом хостинге обойти это нечем).
@@ -2791,7 +2799,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 20:05";   // подставляется при публикации
+const BUILD="20.08 20:07";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -2803,6 +2811,14 @@ async function relaySend(sheet,row){
   }
 }
 const QKEY="mkQueue";
+const HKEY="mkHash";
+function hashOf(rows){
+  const t=JSON.stringify(rows); let h=0;
+  for(let i=0;i<t.length;i++){ h=(h*31+t.charCodeAt(i))|0; }
+  return t.length+":"+h;
+}
+function hLoad(){ try{ return JSON.parse(localStorage.getItem(HKEY)||"{}"); }catch(e){ return {}; } }
+function hSave(o){ try{ localStorage.setItem(HKEY,JSON.stringify(o)); }catch(e){} }
 // Правки, ещё не уехавшие на Диск. Показываем текстом, чтобы можно было
 // скопировать и прислать мне — это работает на любом устройстве, без входа.
 function pendingText(){
