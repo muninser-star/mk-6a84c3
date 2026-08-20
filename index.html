@@ -2912,6 +2912,7 @@ function editEpForm(epId){
       </div>
       <div class="row">
         <button class="btn" id="edOk">Сохранить</button>
+        <button class="btn sec" id="edLocal">Только здесь, без входа</button>
         <button class="btn sec" data-close>Отмена</button>
       </div>
       <p class="note">Правка уйдёт в таблицу «${esc(EDITS)}» на Диске — синхронизация её не затирает.
@@ -2919,6 +2920,13 @@ function editEpForm(epId){
       <div id="edLog" class="synclog"></div>
     </div></div>`;
   const log=(t,c)=>{const e=document.getElementById("edLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
+  document.getElementById("edLocal").addEventListener("click",()=>{
+    const nm=(document.getElementById("edName").value||"").trim();
+    if(!nm){ log("Название не может быть пустым.","er"); return; }
+    ovRename(ep.id,nm); render();
+    log("✓ Название сменилось и сохранится в этом браузере.","ok");
+    log("В таблицу на Диске не ушло. Чтобы я увидел правку, нажмите «Синхронизировать» с компьютера или войдите здесь.","wa");
+  });
   document.getElementById("edOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("edName").value||"").trim();
     if(!nm){ log("Название не может быть пустым.","er"); return; }
@@ -2967,6 +2975,7 @@ function addSymForm(epId){
       </div>
       <div class="row">
         <button class="btn" id="asOk">Записать</button>
+        <button class="btn sec" id="asLocal">Только здесь, без входа</button>
         <button class="btn sec" data-close>Отмена</button>
       </div>
       <p class="note">Запись уйдёт в таблицу «${esc(INBOX)}» на Диске — синхронизация её не затирает.
@@ -2974,6 +2983,17 @@ function addSymForm(epId){
       <div id="asLog" class="synclog"></div>
     </div></div>`;
   const log=(t,c)=>{const e=document.getElementById("asLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
+  document.getElementById("asLocal").addEventListener("click",()=>{
+    const nm=(document.getElementById("asName").value||"").trim();
+    if(!nm){ log("Впишите название симптома.","er"); return; }
+    const c=S.cat.find(z=>z.n===nm);
+    ovAdd({who:cur,d:ep.d1,n:nm,p:ep.as||ep.dx||"",sys:c?c.sys:"other",
+      i:(document.getElementById("asInt").value||"")?+document.getElementById("asInt").value:null,
+      f:(document.getElementById("asNote").value||"").trim()});
+    render();
+    log("✓ Симптом добавлен и сохранится в этом браузере.","ok");
+    log("В таблицу на Диске не ушло. Чтобы я его увидел, нажмите «Синхронизировать» с компьютера или войдите здесь.","wa");
+  });
   document.getElementById("asOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("asName").value||"").trim();
     if(!nm){ log("Впишите название симптома.","er"); return; }
@@ -3008,7 +3028,13 @@ function addSymForm(epId){
   });
 }
 
+const inApp=/(FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger|VKClient|TelegramBot)/i.test(navigator.userAgent)
+  ||(/(iPhone|iPad).*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent));
 document.getElementById("sync").addEventListener("click",()=>{
+  if(inApp){ syncModal();
+    syncLog("Похоже, страница открыта внутри мессенджера, а не в браузере. Google в таких окнах вход не разрешает.","er");
+    syncLog("Откройте книжку в Safari или Chrome — в меню окна есть «Открыть в браузере». Либо правьте кнопкой «Только здесь, без входа», а синхронизацию сделайте с компьютера.","wa");
+    return; }
   if(!G_CLIENT_ID){ syncModal(); syncLog("Кнопка не настроена — нет идентификатора приложения.","wa"); return; }
   syncModal();
   syncLog("Сейчас перейдём на страницу входа Google.");
