@@ -2356,7 +2356,8 @@ function tableRows(list,opt){
       <td class="muted" style="white-space:nowrap">${ru(r.d)}</td>
       ${showType?`<td class="muted">${TYPE[r.t]}</td>`:""}
       <td><b>${hl(r.title)}</b>${r.who?`<div class="muted">${hl(r.who)}${r.place&&r.place!=="—"?" · "+hl(r.place):""}</div>`:""}
-        ${r.v?`<div class="muted">Значение: <b>${hl(r.v)}</b>${r.n?` · норма ${esc(r.n)}`:""}</div>`:""}
+        ${r.v?(()=>{const mk=markVN(r.v,r.n);
+          return `<div class="muted">Значение: <b${mk?` style="color:${mk.c}" title="${esc(mk.why)}"`:""}>${hl(r.v)}</b>${r.n?` · норма ${esc(r.n)}`:""}</div>`;})():""}
         ${r.t==="lab"?`<div class="muted" style="font-size:12.5px">Было: ${prevCell(r)}</div>`:""}</td>
       ${showSys?`<td><span class="tag">${esc(sysName(r.sys))}</span></td>`:""}
       <td>${r.res?hl(r.res):"<span class='muted'>—</span>"}</td>
@@ -2368,6 +2369,25 @@ function tableRows(list,opt){
 // Подсветка числа в строке протокола: сравниваем с нормой, если она указана рядом.
 // Норму пишут по-разному, поэтому разбираем несколько привычных форм.
 function num(x){ return parseFloat(String(x).replace(",", ".")); }
+function markVN(v,n){
+  if(v==null||n==null||n==="") return null;
+  const val=num(String(v).match(/-?\d+[.,]?\d*/)?.[0]);
+  if(isNaN(val)) return null;
+  const t=String(n); let lo=null,hi=null;
+  let m=t.match(/^\s*(?:до|не более|менее|<)\s*(\d+[.,]?\d*)/i);
+  if(m) hi=num(m[1]);
+  if(hi===null){ m=t.match(/^\s*(?:от|более|>)\s*(\d+[.,]?\d*)/i); if(m) lo=num(m[1]); }
+  if(hi===null&&lo===null){ m=t.match(/(\d+[.,]?\d*)\s*[–—-]\s*(\d+[.,]?\d*)/); if(m){ lo=num(m[1]); hi=num(m[2]); } }
+  if(hi===null&&lo===null) return null;
+  const okHi=hi===null||val<=hi, okLo=lo===null||val>=lo;
+  if(okHi&&okLo){
+    const edge=(hi!==null&&val>=hi*0.95)||(lo!==null&&val<=lo*1.05);
+    return edge?{c:"var(--warn)",why:"на границе нормы"}:{c:"var(--ok)",why:"в норме"};
+  }
+  const ref=hi!==null&&val>hi?hi:lo;
+  return Math.abs(val-ref)/(Math.abs(ref)||1)<=0.1
+    ? {c:"var(--warn)",why:"немного вне нормы"} : {c:"var(--bad)",why:"вне нормы"};
+}
 function markVal(txt){
   const t=String(txt);
   if(/⚠️|НЕ ВЫПОЛНЕН|не выполнен|НЕТ ДАННЫХ/i.test(t)) return {c:"var(--warn)",why:"требует внимания"};
@@ -2894,7 +2914,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 22:12";   // подставляется при публикации
+const BUILD="20.08 22:14";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3847,7 +3867,10 @@ function render(){
         <div class="tw"><table><thead><tr><th>Показатель</th>${dates.map(x=>`<th>${ru(x)}</th>`).join("")}</tr></thead><tbody>
         ${names.map(nm=>`<tr><td><b>${esc(nm)}</b></td>${dates.map(dt=>{
           const c=labs.find(r=>r.title===nm&&r.d===dt);
-          return `<td>${c?`<b style="color:var(--${c.st==='ok'?'ink':c.st})">${esc(c.v||"—")}</b>`:'<span class="muted">—</span>'}</td>`;
+          if(!c) return `<td><span class="muted">—</span></td>`;
+          const mk=markVN(c.v,c.n);
+          const col=mk?mk.c:`var(--${c.st==='ok'?'ink':c.st})`;
+          return `<td><b style="color:${col}"${mk?` title="${esc(mk.why)}"`:""}>${esc(c.v||"—")}</b></td>`;
         }).join("")}</tr>`).join("")}
         </tbody></table></div></div>`;})():"";
     m.innerHTML=`
