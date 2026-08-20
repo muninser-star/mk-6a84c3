@@ -2371,7 +2371,7 @@ function tableRows(list,opt){
 function num(x){ return parseFloat(String(x).replace(",", ".")); }
 function markVN(v,n){
   if(v==null||n==null||n==="") return null;
-  const val=num(String(v).match(/-?\d+[.,]?\d*/)?.[0]);
+  const val=num(String(v).replace(/^\s*\d{1,2}\.\d{2}(?:\.\d{2,4})?\s*(?:[:,—–-]\s*)?/,"").match(/-?\d+[.,]?\d*/)?.[0]);
   if(isNaN(val)) return null;
   const t=String(n); let lo=null,hi=null;
   let m=t.match(/^\s*(?:до|не более|менее|<)\s*(\d+[.,]?\d*)/i);
@@ -2391,38 +2391,68 @@ function markVN(v,n){
 function markVal(txt){
   const t=String(txt);
   if(/⚠️|НЕ ВЫПОЛНЕН|не выполнен|НЕТ ДАННЫХ/i.test(t)) return {c:"var(--warn)",why:"требует внимания"};
-  const v0=t.match(/^\s*(-?\d+[.,]?\d*)/);
-  if(!v0) return null;
-  const v=num(v0[1]); if(isNaN(v)) return null;
-  let lo=null, hi=null;
-  let m=t.match(/при норме\s*(?:до|не более|менее|<)\s*(\d+[.,]?\d*)/i);
-  if(m){ hi=num(m[1]); }
-  if(hi===null){ m=t.match(/при норме\s*(?:от|более|>)\s*(\d+[.,]?\d*)/i); if(m) lo=num(m[1]); }
-  if(hi===null&&lo===null){
-    m=t.match(/(?:при\s+)?норм[аеы][^\d]{0,12}(\d+[.,]?\d*)\s*[–—-]\s*(\d+[.,]?\d*)/i);
-    if(m){ lo=num(m[1]); hi=num(m[2]); }
+  // дата в начале — не значение: «28.09.2025: 3,8 %» это про 3,8
+  const body=t.replace(/^\s*\d{1,2}\.\d{2}(?:\.\d{2,4})?\s*(?:[:,—–-]\s*)?/,"");
+  const cut=body.split(/при норме|норма/i);
+  const head=cut[0], tail=cut.slice(1).join(" ");
+
+  // значения до слова «норма»: «7,7 % / 0,40 ×10⁹/л» → [7.7, 0.40].
+  // Степени десятки в единицах измерения числами не считаем.
+  const clean=head.replace(/[х×xX*]\s*10\s*[\^]?\s*[\d⁰¹²³⁴⁵⁶⁷⁸⁹]*/g," ")
+                  .replace(/10\s*[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g," ");
+  const vals=(clean.match(/-?\d+[.,]?\d*/g)||[]).map(num).filter(x=>!isNaN(x));
+  if(!vals.length) return null;
+
+  // границы после: «0–5 % и 0,02–0,30» → [[0,5],[0.02,0.30]]; «до 0,44» → [[null,0.44]]
+  const lims=[];
+  if(tail){
+    const parts=tail.split(/\s+и\s+|;/);
+    parts.forEach(pt=>{
+      let m=pt.match(/(\d+[.,]?\d*)\s*[–—-]\s*(\d+[.,]?\d*)/);
+      if(m){ lims.push([num(m[1]),num(m[2])]); return; }
+      m=pt.match(/(?:до|не более|менее|<)\s*(\d+[.,]?\d*)/i);
+      if(m){ lims.push([null,num(m[1])]); return; }
+      m=pt.match(/(?:от|более|>)\s*(\d+[.,]?\d*)/i);
+      if(m){ lims.push([num(m[1]),null]); return; }
+    });
   }
-  if(hi===null&&lo===null){
-    m=t.match(/норма\s*(\d+[.,]?\d*)\s*[–—-]\s*(\d+[.,]?\d*)/i);
-    if(m){ lo=num(m[1]); hi=num(m[2]); }
-  }
-  if(hi===null&&lo===null){
+  if(!lims.length){
     if(/выше нормы|ниже нормы|превыш|снижен|повышен|не соответствует/i.test(t)) return {c:"var(--bad)",why:"вне нормы"};
-    if(/соответствует|в пределах (?:возрастной )?нормы|возрастной норме|без отклонений|без патологии|не изменен|не расширен|не увеличен|\bнорма\b/i.test(t))
+    if(/соответствует|в пределах (?:возрастной )?нормы|возрастной норме|без отклонений|без патологии|не изменен|не расширен|не увеличен/i.test(t))
       return {c:"var(--ok)",why:"в норме"};
     return null;
   }
-  const okHi = hi===null || v<=hi;
-  const okLo = lo===null || v>=lo;
-  if(okHi&&okLo){
-    // у самой границы — жёлтый, а не зелёный: это ещё норма, но уже край
-    const edge = (hi!==null && v>=hi*0.95) || (lo!==null && v<=lo*1.05);
-    return edge ? {c:"var(--warn)",why:"на границе нормы"} : {c:"var(--ok)",why:"в норме"};
+  // пар должно быть поровну, иначе не угадываем, какое значение к какой норме
+  let pairs;
+  if(vals.length===lims.length){
+    pairs=vals.map((v,i)=>[v,lims[i]]);
+  } else if(lims.length===1){
+    // одна норма на несколько чисел: берём то, что с ней одного порядка.
+    // «3,8 % / 0,230 при норме до 0,440» — норма явно про 0,230, а не про 3,8
+    const [lo,hi]=lims[0], ref=(hi!==null?hi:lo)||1;
+    const near=vals.slice().sort((a,b)=>
+      Math.abs(Math.log10((Math.abs(a)||1e-9)/Math.abs(ref)))-Math.abs(Math.log10((Math.abs(b)||1e-9)/Math.abs(ref))))[0];
+    if(Math.abs(Math.log10((Math.abs(near)||1e-9)/Math.abs(ref)))>1.2) return null;  // ничего похожего — не гадаем
+    pairs=[[near,lims[0]]];
+  } else return null;
+
+  let worst=null;
+  for(const [v,[lo,hi]] of pairs){
+    const okHi=hi===null||v<=hi, okLo=lo===null||v>=lo;
+    let r;
+    if(okHi&&okLo){
+      const edge=(hi!==null&&v>=hi*0.95)||(lo!==null&&lo!==0&&v<=lo*1.05);
+      r=edge?{c:"var(--warn)",why:"на границе нормы",rank:1}:{c:"var(--ok)",why:"в норме",rank:0};
+    } else {
+      const ref=hi!==null&&v>hi?hi:lo;
+      const off=Math.abs(v-ref)/(Math.abs(ref)||1);
+      r=off<=0.1?{c:"var(--warn)",why:"немного вне нормы",rank:1}:{c:"var(--bad)",why:"вне нормы",rank:2};
+    }
+    if(!worst||r.rank>worst.rank) worst=r;
   }
-  const ref = hi!==null && v>hi ? hi : lo;
-  const off = Math.abs(v-ref)/(Math.abs(ref)||1);
-  return off<=0.1 ? {c:"var(--warn)",why:"немного вне нормы"} : {c:"var(--bad)",why:"вне нормы"};
+  return worst;
 }
+
 function openRec(i,showSer){
   const D=DATA[cur], r=D.rec[i]; if(!r)return;
   const o=organOf(r.sys);
@@ -2916,7 +2946,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 22:18";   // подставляется при публикации
+const BUILD="20.08 22:22";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
