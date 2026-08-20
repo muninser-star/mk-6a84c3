@@ -2853,7 +2853,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="20.08 20:24";   // подставляется при публикации
+const BUILD="20.08 20:28";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -2924,10 +2924,11 @@ async function qFlush(){
   }
   return n;
 }
-function ovLoad(){ try{ return JSON.parse(localStorage.getItem(OVKEY)||'{"ren":{},"add":[]}'); }catch(e){ return {ren:{},add:[]}; } }
+function ovLoad(){ try{ const o=JSON.parse(localStorage.getItem(OVKEY)||'{}'); o.ren=o.ren||{}; o.add=o.add||[]; o.eps=o.eps||[]; return o; }catch(e){ return {ren:{},add:[],eps:[]}; } }
 function ovSave(o){ try{ localStorage.setItem(OVKEY,JSON.stringify(o)); }catch(e){} }
 function ovRename(epId,name){ const o=ovLoad(); o.ren[epId]=name; ovSave(o); ovApply(); }
 function ovAdd(rec){ const o=ovLoad(); o.add.push(rec); ovSave(o); ovApply(); }
+function ovNewEp(rec){ const o=ovLoad(); o.eps.push(rec); ovSave(o); ovApply(); }
 
 function ovApply(){
   const o=ovLoad(); let dirty=false;
@@ -2940,6 +2941,14 @@ function ovApply(){
       e.dx=nm; e.pending=1;
     });
   }
+  o.eps=(o.eps||[]).filter(e=>{
+    const S=(DATA[e.who]||{}).sym; if(!S) return false;
+    if((S.ep||[]).some(x=>x.d1===e.d1&&x.dx===e.dx)){ dirty=true; return false; }   // уже в реестре
+    S.ep.push({id:e.id,d1:e.d1,d2:e.d2||"",dx:e.dx,as:"",ab:e.ab?1:0,
+      sym:e.sym||"",t:e.t||"",tmax:null,pending:1});
+    S.ep.sort((x,y)=>y.d1.localeCompare(x.d1));
+    return true;
+  });
   o.add=(o.add||[]).filter(a=>{
     const S=(DATA[a.who]||{}).sym; if(!S) return false;
     const has=(S.log||[]).some(x=>x.d===a.d&&x.n===a.n&&(x.p||"")===(a.p||""));
@@ -3018,7 +3027,7 @@ function gReset(){ const b=document.getElementById("sync"); if(b){b.disabled=fal
   },50);
 })();
 
-const INBOX="20_Добавлено_из_книжки", EDITS="21_Правки_из_книжки";
+const INBOX="20_Добавлено_из_книжки", EDITS="21_Правки_из_книжки", NEWEP="22_Новые_болезни";
 
 // найти таблицу-входящие и дописать строку в конец
 async function gAppend(row,sheet){
@@ -3028,6 +3037,121 @@ async function gAppend(row,sheet){
   if(!f) throw new Error(`на Диске нет таблицы «${INBOX}» — попросите меня её создать`);
   await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}/values/A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({values:[row]})});
+}
+
+// общая отправка: приёмник → прямая запись → очередь
+async function sendRow(sheet,row,log){
+  if(RELAY){
+    if(await relaySend(sheet,row)){ log("Записано в таблицу на Диске.","ok"); return; }
+    qPush(sheet,row); log("Таблица недоступна — отправлю при следующей синхронизации.","wa"); return;
+  }
+  if(gToken){
+    try{ await gAppend(row,sheet); log("Записано в таблицу на Диске.","ok"); return; }
+    catch(e){ qPush(sheet,row); log("На Диск пока не ушло — отправлю при синхронизации.","wa"); return; }
+  }
+  qPush(sheet,row); log("Уйдёт в таблицу при следующей синхронизации.","wa");
+}
+const today0=()=>new Date().toISOString().slice(0,10);
+
+// форма: свободный симптом, без привязки к болезни
+function newSymForm(){
+  const d=DATA[cur], S=d.sym||{cat:[],log:[],ep:[]};
+  const names=[...new Set([...S.cat.map(x=>x.n),...S.log.map(x=>x.n)])].sort();
+  const eps=(S.ep||[]).slice(0,40);
+  modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
+    <h2>Новая запись о симптоме</h2>
+    <div class="ctx">Для <b>${esc(d.short)}</b>. Если симптом относится к болезни — выберите её,
+      иначе оставьте «без диагноза»: такие случаи считаются отдельно.</div>
+    <div class="addform">
+      <div class="fld"><label for="nsDate">Когда</label>
+        <input id="nsDate" type="date" value="${today0()}"></div>
+      <div class="fld"><label for="nsName">Симптом</label>
+        <p class="hint">Из списка или новый</p>
+        <input id="nsName" list="nsList" placeholder="например, Изжога" autocomplete="off">
+        <datalist id="nsList">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="fld"><label for="nsInt">Интенсивность 1–10</label>
+        <p class="hint">Для субъективного: боль, тревога, усталость</p>
+        <input id="nsInt" type="number" min="1" max="10" placeholder="можно пропустить"></div>
+      <div class="fld"><label for="nsVal">Измеренное значение</label>
+        <p class="hint">Например 38,5 °C или 140/90 — впишите вместе с единицей</p>
+        <input id="nsVal" placeholder="необязательно"></div>
+      <div class="fld"><label for="nsMed">Чем лечили</label>
+        <input id="nsMed" placeholder="через запятую, необязательно"></div>
+      <div class="fld"><label for="nsPov">Повод</label>
+        <input id="nsPov" list="nsEps" placeholder="без диагноза" autocomplete="off">
+        <datalist id="nsEps">${[...new Set(eps.map(e=>e.dx).filter(Boolean))].map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="fld"><label for="nsNote">Заметка</label>
+        <input id="nsNote" placeholder="что чувствовал, после чего"></div>
+      <div class="row"><button class="btn" id="nsOk">Записать</button>
+        <button class="btn sec" data-close>Отмена</button></div>
+      <div id="nsLog" class="synclog"></div>
+    </div></div>`;
+  modal.classList.add("on");
+  const log=(t,c)=>{const e=document.getElementById("nsLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
+  document.getElementById("nsOk").addEventListener("click",async ()=>{
+    const nm=(document.getElementById("nsName").value||"").trim();
+    const dt=(document.getElementById("nsDate").value||"").trim();
+    if(!nm){ log("Впишите название симптома.","er"); return; }
+    if(!dt){ log("Укажите дату.","er"); return; }
+    const inten=(document.getElementById("nsInt").value||"").trim();
+    const val=(document.getElementById("nsVal").value||"").trim();
+    const med=(document.getElementById("nsMed").value||"").trim();
+    const pov=(document.getElementById("nsPov").value||"").trim();
+    const note=[(document.getElementById("nsNote").value||"").trim(), val?("измерено: "+val):""].filter(Boolean).join(". ");
+    document.getElementById("nsOk").disabled=true;
+    const c=S.cat.find(z=>z.n===nm);
+    ovAdd({who:cur,d:dt,n:nm,p:pov,sys:c?c.sys:"other",i:inten?+inten:null,f:note,m:med});
+    render();
+    log("✓ Записано и уже видно в книжке.","ok");
+    await sendRow(INBOX,[today0(),d.short,"",dt,pov,nm,inten,note+(med?" | лечили: "+med:""),"нет"],log);
+    document.getElementById("nsOk").disabled=false;
+  });
+}
+
+// форма: новая болезнь
+function newEpForm(){
+  const d=DATA[cur], S=d.sym||{cat:[],log:[],ep:[]};
+  const known=[...new Set((S.ep||[]).map(x=>x.dx).filter(x=>x&&!/не установлено|не уточнена/i.test(x)))].sort();
+  modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
+    <h2>Новая болезнь</h2>
+    <div class="ctx">Для <b>${esc(d.short)}</b>. Симптомы можно добавить потом кнопкой «+» в строке.</div>
+    <div class="addform">
+      <div class="fld"><label for="neName">Название</label>
+        <input id="neName" list="neList" placeholder="например, ОРВИ" autocomplete="off">
+        <datalist id="neList">${known.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></div>
+      <div class="fld"><label for="neD1">Начало</label>
+        <input id="neD1" type="date" value="${today0()}"></div>
+      <div class="fld"><label for="neD2">Окончание</label>
+        <p class="hint">Оставьте пустым, если ещё болеет</p>
+        <input id="neD2" type="date"></div>
+      <div class="fld"><label for="neSym">Симптомы</label>
+        <p class="hint">Через запятую, необязательно</p>
+        <input id="neSym" placeholder="температура, кашель"></div>
+      <div class="fld"><label for="neNote">Как протекало</label>
+        <input id="neNote" placeholder="чем лечили, что было"></div>
+      <div class="fld"><label><input type="checkbox" id="neAb" style="width:auto;margin-right:8px">Давали антибиотик</label></div>
+      <div class="row"><button class="btn" id="neOk">Записать</button>
+        <button class="btn sec" data-close>Отмена</button></div>
+      <div id="neLog" class="synclog"></div>
+    </div></div>`;
+  modal.classList.add("on");
+  const log=(t,c)=>{const e=document.getElementById("neLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
+  document.getElementById("neOk").addEventListener("click",async ()=>{
+    const nm=(document.getElementById("neName").value||"").trim();
+    const d1=(document.getElementById("neD1").value||"").trim();
+    if(!nm){ log("Впишите название болезни.","er"); return; }
+    if(!d1){ log("Укажите дату начала.","er"); return; }
+    const d2=(document.getElementById("neD2").value||"").trim();
+    const sym=(document.getElementById("neSym").value||"").trim();
+    const note=(document.getElementById("neNote").value||"").trim();
+    const ab=document.getElementById("neAb").checked;
+    document.getElementById("neOk").disabled=true;
+    ovNewEp({who:cur,id:`${cur}-ep-${d1}-new${Date.now()}`,d1,d2,dx:nm,ab,sym,t:note});
+    render();
+    log("✓ Болезнь добавлена и уже видна в книжке.","ok");
+    await sendRow(NEWEP,[today0(),d.short,nm,d1,d2,ab?"да":"нет",sym,note,"нет"],log);
+    document.getElementById("neOk").disabled=false;
+  });
 }
 
 // форма переименования болезни
@@ -3443,7 +3567,8 @@ function render(){
       else if(symView==="ill"){
         const E=S.ep||[];
         const open=E.filter(x=>epOpen(x,today));
-        body=E.length?`<div class="card"><h2>Болезни <span class="muted" style="text-transform:none">— ${E.length}</span></h2>
+        body=`<div class="card"><h2>Болезни <span class="muted" style="text-transform:none">— ${E.length}</span>
+          <button class="btn" id="newEp" style="float:right;border:0;background:var(--accent);color:#fff;padding:7px 15px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">+ Добавить</button></h2>`+(E.length?`
           <p class="muted" style="margin:-4px 0 10px">Эпизод — болезнь целиком, от первого признака до выздоровления.
           «Не закрыто» значит, что дата окончания не проставлена, а с начала прошло больше 30 дней: либо забыли закрыть, либо тянется до сих пор.</p>
           ${pendingCount()?`<div class="muted" style="font-size:12px;margin:-4px 0 8px;cursor:pointer" id="pendBar">
@@ -3464,7 +3589,7 @@ function render(){
                 <button class="addsym" data-ep="${esc(x.id)}" title="Добавить симптом к этой болезни">+</button></td>
               <td class="muted" style="font-size:13px;max-width:340px">${esc(x.t||"—")}</td></tr>`;}).join("")}
           </tbody></table></div></div>`
-        :`<div class="card"><p style="margin:0">Эпизодов болезней пока нет.</p></div>`;
+        :`<p style="margin:0">Эпизодов болезней пока нет — добавьте первую кнопкой выше.</p></div>`);
       }
       else if(symView==="strip"){
         body=`<div class="card"><h2>Когда просыпалось и когда затихало</h2>
@@ -3514,7 +3639,8 @@ function render(){
             <td class="muted">${medLinks(meds,medsOf(L).length>3?" …":"")}</td>
             <td style="color:var(--accent);font-weight:600">→</td></tr>`;
         }).join("");
-        body=`<div class="card"><h2>Симптомы <span class="muted" style="text-transform:none">— ${seen.length}</span></h2>
+        body=`<div class="card"><h2>Симптомы <span class="muted" style="text-transform:none">— ${seen.length}</span>
+          <button class="btn" id="newSym" style="float:right;border:0;background:var(--accent);color:#fff;padding:7px 15px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">+ Добавить</button></h2>
           <p class="muted" style="margin:-4px 0 10px">Нажмите симптом — все записи по нему, лекарства и связанные диагнозы. ▲ — едут к врачу сразу.</p>
           <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили</th><th></th></tr></thead>
             <tbody>${rows}</tbody></table></div></div>`;
@@ -3837,6 +3963,8 @@ document.addEventListener("click",e=>{
   const w=e.target.closest("[data-w]"); if(w){cur=w.dataset.w;sysFilter=null;symSel=null;medSel=null;symView="list";tab="home";closeModal();render();return}
   const sv=e.target.closest("[data-symview]"); if(sv){symView=sv.dataset.symview;symSel=null;medSel=null;render();window.scrollTo({top:0});return}
   if(e.target.closest("#pendBar")){ showPending(); return; }
+  if(e.target.closest("#newSym")){ newSymForm(); return; }
+  if(e.target.closest("#newEp")){ newEpForm(); return; }
   const ed=e.target.closest(".editep"); if(ed){ e.stopPropagation(); editEpForm(ed.dataset.ep); return; }
   const as=e.target.closest(".addsym"); if(as){ e.stopPropagation(); addSymForm(as.dataset.ep); return; }
   const mw=e.target.closest("[data-medwho]");
