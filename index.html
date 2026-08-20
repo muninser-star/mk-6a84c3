@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <meta name="referrer" content="no-referrer">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <title>Медкнижка семьи</title>
 <style>
 :root{
@@ -77,6 +78,12 @@ tr:last-child td{border-bottom:0}
 .medchip.go:hover{border-color:var(--accent);color:var(--accent)}
 .medlink{color:var(--accent);cursor:pointer;border-bottom:1px dashed currentColor}
 .medlink:hover{border-bottom-style:solid}
+#sync{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:8px;
+  padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+#sync:hover{border-color:var(--accent);color:var(--accent)}
+#sync[disabled]{opacity:.55;cursor:default}
+.synclog{font-size:13px;line-height:1.7;max-height:52vh;overflow:auto;margin-top:10px}
+.synclog .ok{color:var(--ok)} .synclog .er{color:var(--bad)} .synclog .wa{color:var(--warn)}
 .eprow td{vertical-align:top}
 .tag2{display:inline-block;background:var(--nonebg);border-radius:6px;padding:2px 8px;font-size:12px;margin:0 4px 4px 0}
 .fwrap{overflow-x:auto;padding-bottom:4px}
@@ -167,6 +174,7 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
   <h1>🩺 Медкнижка семьи</h1>
   <div class="who" id="who"></div>
   <input id="q" type="search" placeholder="Поиск по всему: показатель, значение, врач, дата, диагноз…">
+  <button id="sync" title="Обновить Google Таблицы данными из этой книжки">⟳ Синхронизировать</button>
 </header>
 
 <nav id="nav"></nav>
@@ -2621,6 +2629,124 @@ function dayStrip(list,days){
   }
   return `<div class="strip">${cells.join("")}</div>`;
 }
+
+// ===== синхронизация с Google Таблицами =====
+// Идентификатор приложения публичен по замыслу — это не секрет. Ключей в странице нет.
+const G_CLIENT_ID = "";                                  // ← вставить сюда Client ID
+const G_FOLDER   = "1Dz8CoNWUZzre0pK649dM6QGDxcrFmf5B";  // папка «База данных»
+const G_SCOPES   = "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/spreadsheets";
+
+// те же 19 таблиц, что и в выгрузке — собираются прямо из DATA
+function buildTables(){
+  const P=["anya","dima","danya","denis"], T={};
+  const iso=x=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(x||"");return m?`${m[3]}-${m[2]}-${m[1]}`:(x||"")};
+  const add=(n,h,r)=>T[n]=[h,...r];
+  let r;
+  add("01_Люди",["id","имя","краткое","дата_рождения","возраст","заметка","активен"],
+    P.map(k=>[k,DATA[k].name,DATA[k].short,iso(DATA[k].dob),DATA[k].age,DATA[k].note||"",1]));
+  r=[];P.forEach(k=>((DATA[k].sym||{}).cat||[]).forEach((c,i)=>r.push([`${k}-sym-${i+1}`,k,c.n,c.sys,c.dx||"",c.why||"",c.red||0])));
+  add("02_Каталог_симптомов",["id","человек_id","название","система","диагноз_связь","почему_следить","красный_флаг"],r);
+  r=[];P.forEach(k=>((DATA[k].sym||{}).log||[]).forEach((x,i)=>r.push([`${k}-log-${i+1}`,k,x.n,x.d,x.i??"",x.v??"",x.u||"",x.f||"",x.m||"",x.h||"",x.p||"",x.sys])));
+  add("03_Журнал_симптомов",["id","человек_id","симптом","дата","интенсивность","значение","единица","ощущение","лекарства","помогло","повод","система"],r);
+  r=[];P.forEach(k=>{(DATA[k].diagnoses||[]).forEach((x,i)=>r.push([`${k}-dx-${i+1}`,k,x.n,x.c||"",x.y||"","активен",x.s||"",x.sys||"",x.lnk||""]));
+    (DATA[k].resolved||[]).forEach((x,i)=>r.push([`${k}-dxr-${i+1}`,k,x.n,x.c||"",x.y||"","разрешился",x.s||"",x.sys||"",""]))});
+  add("04_Диагнозы",["id","человек_id","название","МКБ","год","статус","состояние","система","сквозная_связь"],r);
+  r=[];const det=[];
+  P.forEach(k=>(DATA[k].rec||[]).forEach((x,i)=>{const id=`${k}-rec-${String(i+1).padStart(3,"0")}`;
+    r.push([id,k,x.t,x.d,x.title,x.sys||"",x.v||"",x.n||"",x.res||"",x.st||"",x.op?1:0,x.lnk||"",x.sid||""]);
+    (x.full||[]).forEach((p,j)=>det.push([id,j+1,p[0],p[1]]))}));
+  add("05_Записи",["id","человек_id","тип","дата","название","система","значение","норма","результат","статус","операция","сквозная_связь","серия_id"],r);
+  add("06_Детали_записей",["запись_id","порядок","ключ","значение"],det);
+  r=[];P.forEach(k=>(DATA[k].series||[]).forEach(sr=>(sr.pts||[]).forEach(pt=>
+    r.push([`${k}-${sr.id}-${iso(pt[0])}`,k,sr.name,iso(pt[0]),pt[1],sr.unit||"",sr.sys||"",sr.norm?.[0]??sr.lo??"",sr.norm?.[1]??sr.hi??"",sr.id]))));
+  add("07_Динамика",["id","человек_id","показатель","дата","значение","единица","система","норма_мин","норма_макс","серия_id"],r);
+  r=[];P.forEach(k=>{(DATA[k].meds||[]).forEach((x,i)=>r.push([`${k}-med-${i+1}`,k,x.n,x.how||"",x.till||"",x.why||"","принимает"]));
+    (DATA[k].medsOff||[]).forEach((x,i)=>r.push([`${k}-medoff-${i+1}`,k,Array.isArray(x)?x[0]:x,"","",Array.isArray(x)?x[1]||"":"","отменено"]))});
+  add("08_Лекарства",["id","человек_id","название","схема","до","зачем","статус"],r);
+  r=[];P.forEach(k=>((DATA[k].sym||{}).log||[]).forEach((x,i)=>{ if(!x.m) return;
+    x.m.split(",").map(t=>t.trim().replace(/^(затем|и)\s+/i,"")).filter(Boolean).forEach((one,j)=>
+      r.push([`${k}-take-${i+1}-${j+1}`,k,x.d,one.replace(/\s+[\d(].*$/,"").trim()||one,one,x.n,`${k}-log-${i+1}`,x.h||""]))}));
+  add("09_Приём_лекарств",["id","человек_id","дата","лекарство","как_записано","по_поводу_симптома","журнал_id","помогло"],r);
+  r=[];P.forEach(k=>{(DATA[k].attention||[]).forEach((x,i)=>r.push([`${k}-att-${i+1}`,k,x.p??"",x.t,x.w||"",x.d||"","",x.sys||"",x.st||"","внимание",x.why||""]));
+    (DATA[k].soon||[]).forEach((x,i)=>r.push([`${k}-soon-${i+1}`,k,"",x.what,x.why||"","",x.when||"",x.sys||"",x.st||"","запись",""]))});
+  add("10_План_внимания",["id","человек_id","приоритет","что_сделать","почему","тянется_с","срок","система","статус","тип","обоснование"],r);
+  r=[];P.forEach(k=>(DATA[k].organs||[]).forEach((o,i)=>r.push([`${k}-org-${i+1}`,k,o.sys,o.name,o.sh||"",o.st||"",o.txt||"",o.x??"",o.y??"",o.ic||""])));
+  add("11_Органы",["id","человек_id","система","название","кратко","статус","текст","x","y","иконка"],r);
+  r=[];P.forEach(k=>(DATA[k].family||[]).forEach((x,i)=>r.push([`${k}-fam-${i+1}`,k,x.who,x.what])));
+  add("12_Наследственность",["id","человек_id","кто","что_было"],r);
+  r=[];P.forEach(k=>(DATA[k].risks||[]).forEach((x,i)=>r.push([`${k}-risk-${i+1}`,k,x.lvl||"",x.r,x.sys||"",x.why||""])));
+  add("13_Риски",["id","человек_id","уровень","риск","система","обоснование"],r);
+  r=[];P.forEach(k=>(DATA[k].preg||[]).forEach((x,i)=>r.push([`${k}-preg-${i+1}`,k,x.n,x.uch||"",x.rody||"",x.osl||"",x.ish||"",x.reb||""])));
+  add("14_Беременности",["id","человек_id","номер","учёт","роды","осложнения","исход","ребёнок"],r);
+  r=[];P.forEach(k=>((DATA[k].sym||{}).ep||[]).forEach(x=>r.push([x.id,k,x.d1,x.d2||"",x.dx||"",x.ab?"да":"нет",x.sym||"",x.tmax??"",x.t||""])));
+  add("15_Эпизоды",["id","человек_id","начало","конец","диагноз","антибиотик","симптомы","макс_температура","как_протекало"],r);
+  r=[];P.forEach(k=>(DATA[k].contra||[]).forEach((x,i)=>r.push([`${k}-con-${i+1}`,k,x.q,x.doc||"",x.ok||"",x.lvl||""])));
+  add("16_Противоречия",["id","человек_id","вопрос","как_в_документах","что_верно","уровень"],r);
+  r=[];P.forEach(k=>{(DATA[k].vac||[]).forEach((x,i)=>{const o=Array.isArray(x)?{v:x[0],d:"",note:x[1]}:x;
+      r.push([`${k}-vac-${i+1}`,k,"вакцинация",o.v,o.d||"",o.note||""])});
+    (DATA[k].past||[]).forEach((x,i)=>r.push([`${k}-past-${i+1}`,k,"перенесённое",Array.isArray(x)?x[0]:x,"",Array.isArray(x)?x[1]||"":""]))});
+  add("17_Вакцинация_Перенесённое",["id","человек_id","тип","название","дата","заметка"],r);
+  r=[];P.forEach(k=>(DATA[k].kpi||[]).forEach((x,i)=>r.push([`${k}-kpi-${i+1}`,k,x.lab,x.val,x.sub||"",x.st||""])));
+  add("18_KPI",["id","человек_id","показатель","значение","подзаголовок","статус"],r);
+  r=[]; if(typeof MEDREF!=="undefined") Object.entries(MEDREF).forEach(([n,v])=>r.push([n,v.c,v.k,v.t]));
+  add("19_Справочник_лекарств",["название","категории","детям","что_это"],r);
+  return T;
+}
+
+let gTokenClient=null;
+function syncLog(html,cls){const b=document.getElementById("synclog"); if(b) b.insertAdjacentHTML("beforeend",`<div class="${cls||""}">${html}</div>`); }
+function syncModal(){
+  modal.innerHTML=`<div class="sheet"><button class="x" data-close>✕</button>
+    <h2>Синхронизация с Google Таблицами</h2>
+    <div class="synclog" id="synclog"></div></div>`;
+  modal.classList.add("on");
+}
+async function gapi(url,opts){
+  const r=await fetch(url,{...opts,headers:{authorization:"Bearer "+gToken,...(opts&&opts.headers||{})}});
+  if(!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0,200)}`);
+  return r.status===204?{}:r.json();
+}
+let gToken=null;
+async function doSync(){
+  const T=buildTables(), names=Object.keys(T);
+  try{
+    syncLog("Ищу таблицы в папке…");
+    const q=encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`);
+    const list=await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=200`);
+    const byName={}; list.files.forEach(f=>byName[f.name]=f.id);
+    let ok=0; const miss=[];
+    for(const n of names){
+      const id=byName[n];
+      if(!id){ miss.push(n); continue; }
+      await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A1:ZZ20000:clear`,{method:"POST"});
+      await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values/A1?valueInputOption=RAW`,
+        {method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({values:T[n]})});
+      syncLog(`✓ ${esc(n)} — ${T[n].length-1} строк`,"ok"); ok++;
+    }
+    syncLog(`<b>Обновлено таблиц: ${ok} из ${names.length}</b>`,"ok");
+    if(miss.length) syncLog("На Диске нет таких таблиц, их нужно создать один раз:<br>"+miss.map(esc).join("<br>"),"wa");
+  }catch(e){ syncLog("Не получилось: "+esc(e.message),"er"); }
+  finally{ const b=document.getElementById("sync"); if(b){b.disabled=false;b.textContent="⟳ Синхронизировать";} }
+}
+document.getElementById("sync").addEventListener("click",()=>{
+  if(!G_CLIENT_ID){
+    syncModal();
+    syncLog(`Кнопка ещё не настроена — нет идентификатора приложения.`,"wa");
+    syncLog(`Что сделать один раз: в console.cloud.google.com создать OAuth-клиент типа
+      «Веб-приложение», в разрешённые источники вписать <code>https://muninser-star.github.io</code>,
+      скопировать Client ID и сказать его мне — я подставлю в книжку. Он публичный, это не секрет.
+      Подробности — в файле «Синхронизация базы.md».`);
+    return;
+  }
+  syncModal(); syncLog("Открываю вход в Google…");
+  const b=document.getElementById("sync"); b.disabled=true; b.textContent="Синхронизирую…";
+  if(!gTokenClient){
+    gTokenClient=google.accounts.oauth2.initTokenClient({client_id:G_CLIENT_ID,scope:G_SCOPES,
+      callback:t=>{ if(t.error){syncLog("Вход отменён","er");b.disabled=false;b.textContent="⟳ Синхронизировать";return;}
+        gToken=t.access_token; doSync(); }});
+  }
+  gTokenClient.requestAccessToken();
+});
 
 function render(){
   const d=DATA[cur];
