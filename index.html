@@ -2696,7 +2696,7 @@ function buildTables(){
 let gTokenClient=null;
 function syncLog(html,cls){const b=document.getElementById("synclog"); if(b) b.insertAdjacentHTML("beforeend",`<div class="${cls||""}">${html}</div>`); }
 function syncModal(){
-  modal.innerHTML=`<div class="sheet"><button class="x" data-close>✕</button>
+  modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
     <h2>Синхронизация с Google Таблицами</h2>
     <div class="synclog" id="synclog"></div></div>`;
   modal.classList.add("on");
