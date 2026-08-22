@@ -2992,7 +2992,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="22.08 20:39";   // подставляется при публикации
+const BUILD="22.08 20:41";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3779,19 +3779,19 @@ function render(){
       else {
         const rows=seen.map(n=>{
           const L=byName[n], c=catOf(n);
-          const meds=medsOf(L).slice(0,3).map(x=>x.name);
+          const meds=medsOf([L[0]]).map(x=>x.name);   // только последний случай, вся история — в карточке
           return `<tr class="symlink" data-sym="${esc(n)}">
             <td><b>${esc(n)}</b>${c.red?' <span class="red-dot">▲</span>':""}${isRising(L,today)?' <span class="pill" style="background:var(--bad)">↑ участился</span>':""}
               <div class="muted" style="font-size:12px">${esc((organOf(c.sys)||{}).name||"")}</div></td>
             <td style="text-align:center"><b>${L.length}</b></td>
             <td class="muted">${L[0].d.split("-").reverse().join(".")}<br><span style="font-size:12px">${lastAgo(L[0].d,today)}</span></td>
-            <td class="muted">${meds.length&&!L[0].m?`<span style="color:var(--muted)">в последний раз — ничем.</span> `:""}${medLinks(meds,medsOf(L).length>3?" …":"")}</td>
+            <td class="muted">${meds.length?medLinks(meds):"<span class='muted'>не лечил</span>"}</td>
             <td style="color:var(--accent);font-weight:600">→</td></tr>`;
         }).join("");
         body=`<div class="card"><h2>Симптомы <span class="muted" style="text-transform:none">— ${seen.length}</span>
           <button class="btn" id="newSym" style="float:right;border:0;background:var(--accent);color:#fff;padding:7px 15px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">+ Добавить</button></h2>
           <p class="muted" style="margin:-4px 0 10px">Сверху то, что отмечалось недавно. Нажмите симптом — все записи по нему, лекарства и связанные диагнозы. ▲ — едут к врачу сразу.</p>
-          <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили за всё время</th><th></th></tr></thead>
+          <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили тогда</th><th></th></tr></thead>
             <tbody>${rows}</tbody></table></div></div>`;
       }
 
@@ -3992,11 +3992,11 @@ function render(){
         return `<div class="card" id="y-sym"><h2>Симптомы по этой системе <span class="muted" style="text-transform:none">— ${SY.length}</span></h2>
         <p class="muted" style="margin:-4px 0 10px">Что человек чувствовал при этих диагнозах. Нажмите симптом — все его записи и лекарства.</p>
         <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили за всё время</th><th></th></tr></thead><tbody>
-        ${SY.map(x=>{const meds=medsOf(x.log).slice(0,3).map(v=>v.name);
+        ${SY.map(x=>{const meds=x.log.length?medsOf([x.log[0]]).map(v=>v.name):[];
           return `<tr class="symlink" data-sym="${esc(x.n)}"><td><b>${esc(x.n)}</b>${x.cat.red?' <span class="red-dot">▲</span>':""}</td>
           <td style="text-align:center">${x.log.length?`<b>${x.log.length}</b>`:'<span class="muted">—</span>'}</td>
           <td class="muted">${x.log.length?x.log[0].d.split("-").reverse().join("."):"не отмечалось"}</td>
-          <td class="muted">${medLinks(meds)}</td>
+          <td class="muted">${x.log.length?(meds.length?medLinks(meds):"<span class='muted'>не лечил</span>"):"—"}</td>
           <td style="color:var(--accent);font-weight:600">→</td></tr>`}).join("")}
         </tbody></table></div>
         ${allLog.length?`<h3 style="margin-top:14px">Чем лечили по всей системе</h3>${medChips(allLog)}`:""}
