@@ -3991,7 +3991,7 @@ function render(){
         const allLog=withLog.flatMap(x=>x.log);
         return `<div class="card" id="y-sym"><h2>Симптомы по этой системе <span class="muted" style="text-transform:none">— ${SY.length}</span></h2>
         <p class="muted" style="margin:-4px 0 10px">Что человек чувствовал при этих диагнозах. Нажмите симптом — все его записи и лекарства.</p>
-        <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили за всё время</th><th></th></tr></thead><tbody>
+        <div class="tw"><table><thead><tr><th>Симптом</th><th style="text-align:center">записей</th><th>последний раз</th><th>чем лечили тогда</th><th></th></tr></thead><tbody>
         ${SY.map(x=>{const meds=x.log.length?medsOf([x.log[0]]).map(v=>v.name):[];
           return `<tr class="symlink" data-sym="${esc(x.n)}"><td><b>${esc(x.n)}</b>${x.cat.red?' <span class="red-dot">▲</span>':""}</td>
           <td style="text-align:center">${x.log.length?`<b>${x.log.length}</b>`:'<span class="muted">—</span>'}</td>
