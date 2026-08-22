@@ -2988,7 +2988,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="22.08 20:23";   // подставляется при публикации
+const BUILD="22.08 20:24";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3070,15 +3070,23 @@ function ovApply(){
   for(const k of Object.keys(DATA)){
     const S=DATA[k].sym; if(!S) continue;
     (S.ep||[]).forEach(e=>{
+      if(e._base){ e.dx=e._base; delete e._base; delete e.pending; }   // откатываем прошлое наложение
       const nm=o.ren[e.id]; if(!nm) return;
       if(e.dx===nm){ delete o.ren[e.id]; dirty=true; return; }   // уже в реестре — наложение не нужно
       if(!e._base) e._base=e.dx;
       e.dx=nm; e.pending=1;
     });
   }
+  // Сначала убираем прошлые наложения из данных, иначе они примутся за реестр
+  // и наложение сотрёт само себя при следующей перерисовке.
+  for(const k of Object.keys(DATA)){
+    const S=DATA[k].sym; if(!S) continue;
+    if(S.log) S.log=S.log.filter(x=>!x.pending);
+    if(S.ep)  S.ep =S.ep.filter(x=>!x.pending);
+  }
   o.eps=(o.eps||[]).filter(e=>{
     const S=(DATA[e.who]||{}).sym; if(!S) return false;
-    if((S.ep||[]).some(x=>x.d1===e.d1&&x.dx===e.dx)){ dirty=true; return false; }   // уже в реестре
+    if((S.ep||[]).some(x=>x.d1===e.d1&&x.dx===e.dx)){ dirty=true; return false; }   // доехало до реестра
     S.ep.push({id:e.id,d1:e.d1,d2:e.d2||"",dx:e.dx,as:"",ab:e.ab?1:0,
       sym:e.sym||"",t:e.t||"",tmax:null,pending:1});
     S.ep.sort((x,y)=>y.d1.localeCompare(x.d1));
@@ -3086,10 +3094,9 @@ function ovApply(){
   });
   o.add=(o.add||[]).filter(a=>{
     const S=(DATA[a.who]||{}).sym; if(!S) return false;
-    const has=(S.log||[]).some(x=>x.d===a.d&&x.n===a.n&&(x.p||"")===(a.p||""));
-    if(has){ dirty=true; return false; }                         // уже в реестре
+    if((S.log||[]).some(x=>x.d===a.d&&x.n===a.n&&(x.p||"")===(a.p||""))){ dirty=true; return false; }
     S.log.push({d:a.d,n:a.n,sys:a.sys||"other",i:a.i??null,v:null,u:"",
-      f:a.f||"",m:"",h:"",p:a.p||"",pending:1});
+      f:a.f||"",m:a.m||"",h:"",p:a.p||"",pending:1});
     S.log.sort((x,y)=>y.d.localeCompare(x.d));
     return true;
   });
