@@ -3001,7 +3001,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="22.08 20:48";   // подставляется при публикации
+const BUILD="22.08 20:53";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3216,7 +3216,7 @@ function medNames(S){
       const k=(one.replace(/\s+[\d(].*$/,"").trim())||one; if(k) set.add(k);});});
   return [...set].sort((a,b)=>a.localeCompare(b,"ru"));
 }
-function attachSuggest(inputId,items){
+function attachSuggest(inputId,items,opt){
   const inp=document.getElementById(inputId); if(!inp) return;
   inp.removeAttribute("list");
   const wrap=document.createElement("div"); wrap.className="sugwrap";
@@ -3224,8 +3224,11 @@ function attachSuggest(inputId,items){
   const box=document.createElement("div"); box.className="sug"; wrap.appendChild(box);
   let idx=-1, shown=[];
   const norm=t=>String(t).toLowerCase().replace(/ё/g,"е");
+  const multi=!!(opt&&opt.multi);
+  const segs=()=>inp.value.split(",");
+  const lastSeg=()=>multi?segs()[segs().length-1].trim():inp.value.trim();
   const draw=()=>{
-    const q=norm(inp.value.trim());
+    const q=norm(lastSeg());
     shown=(q?items.filter(x=>norm(x).includes(q)):items).slice(0,8);
     if(!shown.length){ box.classList.remove("on"); return; }
     box.innerHTML=shown.map((x,i)=>{
@@ -3235,7 +3238,14 @@ function attachSuggest(inputId,items){
     }).join("");
     box.classList.add("on");
   };
-  const pick=v=>{ inp.value=v; box.classList.remove("on"); idx=-1; inp.focus(); };
+  const pick=v=>{
+    if(multi){
+      const p=segs(); p[p.length-1]=" "+v;
+      inp.value=p.join(",").replace(/^\s+/,"")+", ";
+    } else inp.value=v;
+    box.classList.remove("on"); idx=-1; inp.focus();
+    if(multi) setTimeout(draw,0);          // сразу предлагаем следующее
+  };
   inp.addEventListener("input",()=>{ idx=-1; draw(); });
   inp.addEventListener("focus",draw);
   inp.addEventListener("keydown",e=>{
@@ -3286,7 +3296,7 @@ function newSymForm(){
     </div></div>`;
   modal.classList.add("on");
   attachSuggest("nsName",names);
-  attachSuggest("nsMed",medNames(S));
+  attachSuggest("nsMed",medNames(S),{multi:true});
   attachSuggest("nsPov",[...new Set(eps.map(e=>e.dx).filter(Boolean))]);
   const log=(t,c)=>{const e=document.getElementById("nsLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
   document.getElementById("nsOk").addEventListener("click",async ()=>{
@@ -3337,6 +3347,7 @@ function newEpForm(){
     </div></div>`;
   modal.classList.add("on");
   attachSuggest("neName",known);
+  attachSuggest("neSym",[...new Set((S.cat||[]).map(c=>c.n))],{multi:true});
   const log=(t,c)=>{const e=document.getElementById("neLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
   document.getElementById("neOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("neName").value||"").trim();
