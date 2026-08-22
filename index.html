@@ -2938,8 +2938,12 @@ let syncAll=false;
 async function doSync(){
   const T=buildTables(), names=Object.keys(T);
   try{
-    const sent=await qFlush();
+    const waiting=qLoad().length;
+  if(waiting) syncLog(`В очереди на отправку: ${waiting}`);
+  const sent=await qFlush();
   if(sent) syncLog(`Отправил накопленные правки: ${sent}`,"ok");
+  if(qLastError) syncLog(`Отправить остальное не вышло: ${esc(qLastError)}`,"er");
+  else if(waiting&&!sent) syncLog("Очередь не сдвинулась, причина не определилась","er");
   syncLog("Ищу таблицы в папке…");
     const q=encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`);
     const list=await gapi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=200`);
@@ -2988,7 +2992,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="22.08 20:27";   // подставляется при публикации
+const BUILD="22.08 20:33";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3048,14 +3052,15 @@ function showPending(){
 }
 function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
 function qPush(sheet,row){ const arr=qLoad(); arr.push({sheet,row}); try{ localStorage.setItem(QKEY,JSON.stringify(arr)); }catch(e){} }
+let qLastError="";
 async function qFlush(){
-  let arr=qLoad(), n=0;
+  let arr=qLoad(), n=0; qLastError="";
   while(arr.length){
     try{ if(RELAY){ if(!await relaySend(arr[0].sheet,arr[0].row)) throw new Error("приёмник молчит"); }
       else await gAppend(arr[0].row,arr[0].sheet);
       arr.shift(); n++;
       localStorage.setItem(QKEY,JSON.stringify(arr)); }
-    catch(e){ break; }
+    catch(e){ qLastError=e.message||String(e); break; }
   }
   return n;
 }
@@ -3189,7 +3194,7 @@ async function sendRow(sheet,row,log){
   }
   if(gToken){
     try{ await gAppend(row,sheet); log("Записано в таблицу на Диске.","ok"); return; }
-    catch(e){ qPush(sheet,row); log("На Диск пока не ушло — отправлю при синхронизации.","wa"); return; }
+    catch(e){ qPush(sheet,row); log("На Диск не ушло: "+esc(e.message)+". Попробую при синхронизации.","wa"); return; }
   }
   qPush(sheet,row); log("Уйдёт в таблицу при следующей синхронизации.","wa");
 }
