@@ -97,6 +97,15 @@ tr:last-child td{border-bottom:0}
   cursor:pointer;font:inherit;font-weight:600;font-size:14px}
 .addform .btn[disabled]{opacity:.5;cursor:default}
 .addform .btn.sec{background:var(--nonebg);color:var(--muted);font-weight:500}
+.sugwrap{position:relative}
+.sug{position:absolute;left:0;right:0;top:100%;z-index:60;background:var(--card);
+  border:1px solid var(--line);border-radius:9px;margin-top:4px;max-height:220px;overflow:auto;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);display:none}
+.sug.on{display:block}
+.sug div{padding:9px 12px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--line)}
+.sug div:last-child{border-bottom:0}
+.sug div:hover,.sug div.pick{background:var(--accentbg);color:var(--accent)}
+.sug b{color:var(--accent)}
 .addform .note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px;
   border-top:1px solid var(--line);padding-top:10px}
 .ctx{background:var(--nonebg);border-radius:9px;padding:10px 12px;font-size:13px;line-height:1.5;margin:-2px 0 4px}
@@ -2992,7 +3001,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="22.08 20:44";   // подставляется при публикации
+const BUILD="22.08 20:48";   // подставляется при публикации
 const RELAY="";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3198,6 +3207,48 @@ async function sendRow(sheet,row,log){
   }
   qPush(sheet,row); log("Уйдёт в таблицу при следующей синхронизации.","wa");
 }
+// Подсказки по любой части слова: «бол» находит и «Головная боль», и «Боль в горле».
+// Родной datalist ищет только по началу и на телефоне часто молчит.
+function medNames(S){
+  const set=new Set(typeof MEDREF!=="undefined"?Object.keys(MEDREF):[]);
+  (S&&S.log||[]).forEach(x=>{ if(!x.m) return;
+    x.m.split(",").forEach(t=>{const one=t.trim().replace(/^(затем|и)\s+/i,"");
+      const k=(one.replace(/\s+[\d(].*$/,"").trim())||one; if(k) set.add(k);});});
+  return [...set].sort((a,b)=>a.localeCompare(b,"ru"));
+}
+function attachSuggest(inputId,items){
+  const inp=document.getElementById(inputId); if(!inp) return;
+  inp.removeAttribute("list");
+  const wrap=document.createElement("div"); wrap.className="sugwrap";
+  inp.parentNode.insertBefore(wrap,inp); wrap.appendChild(inp);
+  const box=document.createElement("div"); box.className="sug"; wrap.appendChild(box);
+  let idx=-1, shown=[];
+  const norm=t=>String(t).toLowerCase().replace(/ё/g,"е");
+  const draw=()=>{
+    const q=norm(inp.value.trim());
+    shown=(q?items.filter(x=>norm(x).includes(q)):items).slice(0,8);
+    if(!shown.length){ box.classList.remove("on"); return; }
+    box.innerHTML=shown.map((x,i)=>{
+      const p=norm(x).indexOf(q);
+      const html=(q&&p>=0)?esc(x.slice(0,p))+"<b>"+esc(x.slice(p,p+q.length))+"</b>"+esc(x.slice(p+q.length)):esc(x);
+      return `<div data-i="${i}" class="${i===idx?"pick":""}">${html}</div>`;
+    }).join("");
+    box.classList.add("on");
+  };
+  const pick=v=>{ inp.value=v; box.classList.remove("on"); idx=-1; inp.focus(); };
+  inp.addEventListener("input",()=>{ idx=-1; draw(); });
+  inp.addEventListener("focus",draw);
+  inp.addEventListener("keydown",e=>{
+    if(!box.classList.contains("on")) return;
+    if(e.key==="ArrowDown"){ idx=Math.min(idx+1,shown.length-1); draw(); e.preventDefault(); }
+    else if(e.key==="ArrowUp"){ idx=Math.max(idx-1,0); draw(); e.preventDefault(); }
+    else if(e.key==="Enter"&&idx>=0){ pick(shown[idx]); e.preventDefault(); }
+    else if(e.key==="Escape"){ box.classList.remove("on"); }
+  });
+  box.addEventListener("mousedown",e=>{ const d=e.target.closest("[data-i]");
+    if(d){ e.preventDefault(); pick(shown[+d.dataset.i]); } });
+  document.addEventListener("click",e=>{ if(!wrap.contains(e.target)) box.classList.remove("on"); });
+}
 const today0=()=>new Date().toISOString().slice(0,10);
 
 // форма: свободный симптом, без привязки к болезни
@@ -3234,6 +3285,9 @@ function newSymForm(){
       <div id="nsLog" class="synclog"></div>
     </div></div>`;
   modal.classList.add("on");
+  attachSuggest("nsName",names);
+  attachSuggest("nsMed",medNames(S));
+  attachSuggest("nsPov",[...new Set(eps.map(e=>e.dx).filter(Boolean))]);
   const log=(t,c)=>{const e=document.getElementById("nsLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
   document.getElementById("nsOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("nsName").value||"").trim();
@@ -3282,6 +3336,7 @@ function newEpForm(){
       <div id="neLog" class="synclog"></div>
     </div></div>`;
   modal.classList.add("on");
+  attachSuggest("neName",known);
   const log=(t,c)=>{const e=document.getElementById("neLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
   document.getElementById("neOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("neName").value||"").trim();
@@ -3326,6 +3381,7 @@ function editEpForm(epId){
         В книжке название сменится после того, как я перенесу правку в реестр.</p>
       <div id="edLog" class="synclog"></div>
     </div></div>`;
+  attachSuggest("edName",known);
   const log=(t,c)=>{const e=document.getElementById("edLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
   document.getElementById("edOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("edName").value||"").trim();
@@ -3385,6 +3441,7 @@ function addSymForm(epId){
         В книжку симптом попадёт после того, как я перенесу его в реестр.</p>
       <div id="asLog" class="synclog"></div>
     </div></div>`;
+  attachSuggest("asName",names);
   const log=(t,c)=>{const e=document.getElementById("asLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
   document.getElementById("asOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("asName").value||"").trim();
