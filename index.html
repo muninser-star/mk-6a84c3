@@ -1829,7 +1829,7 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
     {lab:"Рост / вес",val:"177 / 85,0",sub:"см / кг · 08.08.2026, талия 97 см",st:"warn"},
     {lab:"ИМТ",val:"27,1",sub:"избыточная масса; +2,8 кг с января",st:"warn"},
     {lab:"HbA1c",val:"5,7 %",sub:"коридор преддиабета · 15.04.2025",st:"warn"},
-    {lab:"Давление",val:"122/78",sub:"норма · 23.08.2026, пульс 86. Накануне было 133/78",st:"ok"},
+    {lab:"Давление",val:"122/78",sub:"норма · 23.08.2026, 23:40, пульс 86. Накануне в 22:13 было 133/78",st:"ok"},
     {lab:"Аллергия",val:"не выявлена",sub:"лекарственной нет, плесени исключены"},
     {lab:"Принимает",val:"Оптинол + Лютеин",sub:"капли с 20.08.2026, БАД — до 13.09.2026"},
     {lab:"ДМС",val:"СОГАЗ",sub:"полис 0625LM000365/000212 · ЭМК 6771715"}
@@ -3033,7 +3033,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="23.08 23:38";   // подставляется при публикации
+const BUILD="23.08 23:44";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3473,6 +3473,7 @@ function editAddForm(aid){
   const {o,i}=addFind(aid); if(i<0) return;
   const a=o.add[i], d=DATA[a.who]||DATA[cur], S=d.sym||{cat:[],log:[],ep:[]};
   const names=[...new Set([...S.cat.map(x=>x.n),...S.log.map(x=>x.n)])].sort();
+  const eps=[...new Set((S.ep||[]).slice(0,40).map(e=>e.dx).filter(Boolean))];
   modal.className="modal on";
   modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
     <h2>Исправить запись</h2>
@@ -3486,17 +3487,28 @@ function editAddForm(aid){
         <datalist id="eaList">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
       </div>
       <div class="fld">
+        <label for="eaDate">Когда</label>
+        <input id="eaDate" type="date" value="${esc(a.d||"")}">
+      </div>
+      <div class="fld">
         <label for="eaInt">Интенсивность</label>
         <p class="hint">От 1 до 10, для субъективного. Пусто — если не оценивали</p>
         <input id="eaInt" type="number" min="1" max="10" value="${a.i??""}">
       </div>
       <div class="fld">
+        <label for="eaMed">Чем лечили</label>
+        <p class="hint">Через запятую. Пусто — значит не лечили</p>
+        <input id="eaMed" value="${esc(a.m||"")}" placeholder="например, Холисал" autocomplete="off">
+      </div>
+      <div class="fld">
         <label for="eaPov">Повод</label>
         <p class="hint">При какой болезни был симптом. Пусто — значит отметили и не лечили</p>
-        <input id="eaPov" value="${esc(a.p||"")}">
+        <input id="eaPov" list="eaEps" value="${esc(a.p||"")}" autocomplete="off">
+        <datalist id="eaEps">${eps.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
       </div>
       <div class="fld">
         <label for="eaNote">Заметка</label>
+        <p class="hint">Что чувствовал, после чего. Измеренное значение тоже сюда — 38,5 °C, 140/90</p>
         <input id="eaNote" value="${esc(a.f||"")}">
       </div>
       <div class="row">
@@ -3508,25 +3520,31 @@ function editAddForm(aid){
       <div id="eaLog" class="synclog"></div>
     </div></div>`;
   attachSuggest("eaName",names);
+  attachSuggest("eaMed",medNames(S),{multi:true});
+  attachSuggest("eaPov",eps);
   const log=(t,c)=>{const e=document.getElementById("eaLog"); if(e) e.innerHTML+=`<div class="${c||""}">${t}</div>`;};
   document.getElementById("eaOk").addEventListener("click",async ()=>{
     const nm=(document.getElementById("eaName").value||"").trim();
     if(!nm){ log("Название не может быть пустым.","er"); return; }
+    const dt=(document.getElementById("eaDate").value||"").trim();
+    if(!dt){ log("Укажите дату.","er"); return; }
     const iv=(document.getElementById("eaInt").value||"").trim();
+    const md=(document.getElementById("eaMed").value||"").trim();
     const pv=(document.getElementById("eaPov").value||"").trim();
     const nt=(document.getElementById("eaNote").value||"").trim();
-    const was=[a.n,a.i??"",a.p||"",a.f||""].join("|");
-    if([nm,iv,pv,nt].join("|")===was){ log("Ничего не изменилось.","wa"); return; }
+    const was=[a.d,a.n,a.i??"",a.m||"",a.p||"",a.f||""].join("|");
+    if([dt,nm,iv,md,pv,nt].join("|")===was){ log("Ничего не изменилось.","wa"); return; }
     document.getElementById("eaOk").disabled=true;
     const cat=S.cat.find(z=>z.n===nm);
     const cur2=addFind(aid); if(cur2.i<0){ log("Запись уже перенесена в реестр — править её здесь нельзя.","er"); return; }
     const oo=cur2.o;
-    oo.add[cur2.i]={who:a.who,d:a.d,n:nm,p:pv,sys:cat?cat.sys:(a.sys||"other"),
-      i:iv?+iv:null,f:nt};
+    oo.add[cur2.i]={who:a.who,d:dt,n:nm,p:pv,sys:cat?cat.sys:(a.sys||"other"),
+      i:iv?+iv:null,f:nt,m:md};
     ovSave(oo); ovApply(); render();
-    const note=`ИСПРАВЛЕНИЕ записи от ${a.d}: было «${a.n}»${a.i?`, интенсивность ${a.i}`:""}${a.p?`, повод «${a.p}»`:""}`
-      +(nt?`. ${nt}`:"");
-    await sendRow(INBOX,[new Date().toISOString().slice(0,10), d.short, "", a.d, pv, nm, iv, note, "нет"],
+    const было=[`было «${a.n}»`, a.d!==dt?`дата ${a.d}`:"", a.i?`интенсивность ${a.i}`:"",
+      a.m?`лечили ${a.m}`:"", a.p?`повод «${a.p}»`:""].filter(Boolean).join(", ");
+    const note=`ИСПРАВЛЕНИЕ записи от ${a.d}: ${было}`+(nt?`. ${nt}`:"")+(md?` | лечили: ${md}`:"");
+    await sendRow(INBOX,[new Date().toISOString().slice(0,10), d.short, "", dt, pv, nm, iv, note, "нет"],
       log,"✓ Исправлено. В книжке видно сразу.");
   });
 }
