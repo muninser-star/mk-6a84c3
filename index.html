@@ -205,6 +205,22 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .back{border:0;background:var(--accentbg);color:var(--accent);padding:6px 12px;border-radius:99px;
   cursor:pointer;font:inherit;font-size:13px;font-weight:600;margin-bottom:12px}
 .soon{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.nut-hero{display:grid;gap:14px;grid-template-columns:minmax(220px,1fr) minmax(240px,1.2fr);align-items:center;
+  background:linear-gradient(135deg,var(--accentbg),var(--bg));border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:6px}
+.nut-hero .big{font-size:38px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.nut-hero .cap{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.nut-bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}
+.nut-bar>i{display:block;height:100%;background:var(--accent)}
+.nut-cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:8px 0 4px}
+.nut-card{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--bg)}
+.nut-card b{display:block;font-size:14px;margin-bottom:3px}
+.nut-card span{font-size:12.5px;color:var(--muted);line-height:1.45}
+.nut-card.good{border-left:4px solid var(--ok)}
+.nut-card.bad{border-left:4px solid var(--bad)}
+.nut-h{display:flex;align-items:center;gap:8px;font-size:15px;margin:24px 0 8px;font-weight:700;letter-spacing:-.01em}
+.nut-h .ic{font-size:19px}
+.nut-h .sub{font-weight:400;font-size:12.5px;color:var(--muted)}
+@media(max-width:640px){.nut-hero{grid-template-columns:1fr}.nut-hero .big{font-size:32px}}
 .soonitem{background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--bad);
   border-radius:10px;padding:11px 13px;cursor:pointer;display:flex;flex-direction:column;gap:5px}
 .soonitem:hover{border-color:var(--accent)}
@@ -1928,7 +1944,12 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
       ["Большие порции жирного мяса","Три эпизода тяжести в правом подреберье после жирного: 2022, май и июнь 2026. Вопрос размера порции, не запрет"],
       ["Колбасы, сосиски, полуфабрикаты","Соль при норме кардиолога до 5 г плюс скрытый жир"],
       ["Майонезные соусы","Незаметные 100–150 ккал на порцию; заменить сметаной 10–15 % или ложкой масла"]],
-    add:["Овощи 400 г в день — замороженные смеси дешевле свежих и не хуже по клетчатке","Крупы: овёс, гречка, перловка. Перловка вдвое дешевле гречки и лучше по гликемическому индексу","Бобовые дважды в неделю: чечевица, фасоль, нут — самый дешёвый белок","Рыба дважды в неделю: скумбрия, сельдь, минтай, сардины в консервах — те же омега-3 в разы дешевле сёмги","Творог и яйца — базовый белок на завтрак и перекус","Вода 1,5–2 л: при мочевой кислоте 439 это буквально лечебная мера"],
+    add:[["Овощи 400 г в день","Замороженные смеси дешевле свежих и по клетчатке не хуже. Капуста, свёкла, кабачки — самые дешёвые"],
+      ["Крупы: овёс, гречка, перловка","Перловка вдвое дешевле гречки и лучше по гликемическому индексу"],
+      ["Бобовые дважды в неделю","Чечевица, фасоль, нут — самый дешёвый белок вообще, плюс клетчатка для печени и сахара"],
+      ["Рыба дважды в неделю","Белая рыба: минтай, треска, хек. Дёшево и низкопуриново — важно при мочевой кислоте 439"],
+      ["Творог и яйца","Базовый белок на завтрак и перекус, держит сытость дольше всего"],
+      ["Вода 1,5–2 л","При мочевой кислоте это буквально лечебная мера: чем больше объём мочи, тем лучше выводятся ураты"]],
     week:[["1-я неделя","Убрать жидкие калории: сладкие напитки, соки, пиво. Больше ничего не менять"],
       ["2-я","Правило тарелки на ужин: половина овощей"],
       ["3-я","Завтрак с белком каждый день — овсянка с яйцом или творог"],
@@ -3232,7 +3253,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="03.09 00:25";   // подставляется при публикации
+const BUILD="03.09 00:33";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4330,52 +4351,118 @@ function render(){
   // ── Анамнез: наследственность, риски, беременности, болезни, противоречия
   else if(tab==="nutr"){
     const n=d.nutrition;
-    m.innerHTML=!n?`<div class="card"><div class="empty">Раздел питания для этого человека пока не заполнен</div></div>`
-      :`<div class="card">
+    const H=(ic,t,sub)=>`<div class="nut-h"><span class="ic">${ic}</span><span>${t}</span>${sub?`<span class="sub">— ${esc(sub)}</span>`:""}</div>`;
+    const T2=(rows,w)=>`<div class="tw"><table><tbody>${rows.map(r=>`<tr><td style="width:${w||"28%"}"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`;
+    const T3=(rows,w)=>`<div class="tw"><table><tbody>${rows.map(r=>`<tr><td style="width:${w||"24%"}"><b>${esc(r[0])}</b></td><td style="white-space:nowrap"><b>${esc(r[1])}</b></td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`;
+    const cards=(rows,cls)=>`<div class="nut-cards">${rows.map(r=>`<div class="nut-card ${cls}"><b>${esc(r[0])}</b><span>${esc(r[1]||"")}</span></div>`).join("")}</div>`;
+    // тарелка: половина овощи, четверть белок, четверть крупа
+    const plate=`<svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Метод тарелки">
+      <circle cx="60" cy="60" r="56" fill="var(--card)" stroke="var(--line)" stroke-width="2"/>
+      <path d="M60 60 L60 6 A54 54 0 0 0 60 114 Z" fill="var(--ok)" opacity=".8"/>
+      <path d="M60 60 L60 6 A54 54 0 0 1 114 60 Z" fill="var(--accent)" opacity=".75"/>
+      <path d="M60 60 L114 60 A54 54 0 0 1 60 114 Z" fill="var(--warn)" opacity=".75"/>
+      <circle cx="60" cy="60" r="56" fill="none" stroke="var(--line)" stroke-width="2"/>
+      <text x="32" y="64" font-size="9" fill="#fff" font-weight="700" text-anchor="middle">овощи</text>
+      <text x="32" y="74" font-size="8" fill="#fff" text-anchor="middle">½</text>
+      <text x="84" y="38" font-size="8" fill="#fff" font-weight="700" text-anchor="middle">белок ¼</text>
+      <text x="84" y="88" font-size="8" fill="#fff" font-weight="700" text-anchor="middle">крупа ¼</text>
+    </svg>`;
+    // ступени калорийности
+    const steps=[["сейчас",2450,"var(--muted)"],["1–2 нед",2300,"var(--warn)"],["3–4 нед",2150,"var(--warn)"],["с 5-й",2000,"var(--ok)"]];
+    const maxc=2450, ramp=`<svg viewBox="0 0 300 110" width="100%" height="120" role="img" aria-label="Ступени калорийности">
+      ${steps.map((st,k)=>{const h=Math.round(st[1]/maxc*72), x=12+k*72, y=88-h;
+        return `<rect x="${x}" y="${y}" width="52" height="${h}" rx="5" fill="${st[2]}" opacity=".85"/>
+        <text x="${x+26}" y="${y-5}" font-size="11" font-weight="700" fill="var(--ink)" text-anchor="middle">${st[1]}</text>
+        <text x="${x+26}" y="102" font-size="10" fill="var(--muted)" text-anchor="middle">${st[0]}</text>`}).join("")}
+    </svg>`;
+    // полоса БЖУ
+    const bju=`<svg viewBox="0 0 300 46" width="100%" height="52" role="img" aria-label="Белки, жиры, углеводы">
+      <rect x="0" y="8" width="84" height="22" rx="4" fill="var(--accent)" opacity=".85"/>
+      <rect x="86" y="8" width="96" height="22" rx="4" fill="var(--warn)" opacity=".85"/>
+      <rect x="184" y="8" width="116" height="22" rx="4" fill="var(--ok)" opacity=".8"/>
+      <text x="42" y="23" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">Б 28 %</text>
+      <text x="134" y="23" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">Ж 32 %</text>
+      <text x="242" y="23" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">У 40 %</text>
+      <text x="42" y="42" font-size="10" fill="var(--muted)" text-anchor="middle">140 г</text>
+      <text x="134" y="42" font-size="10" fill="var(--muted)" text-anchor="middle">70 г</text>
+      <text x="242" y="42" font-size="10" fill="var(--muted)" text-anchor="middle">200 г</text>
+    </svg>`;
+    const done=Math.max(0,Math.min(100,Math.round((85-85)/(85-78)*100)));
+    m.innerHTML=!n?`<div class="card"><div class="empty">Раздел питания для этого человека пока не заполнен</div></div>`:`
+    <div class="card">
       <h2>Питание и снижение веса</h2>
-      <div class="muted" style="margin:-6px 0 12px"><b>Цель:</b> ${esc(n.goal)}</div>
-      ${n.calc?`<h3 style="font-size:13px;margin:16px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Сколько нужно — расчёт</h3>
-      <div class="tw"><table><tbody>${n.calc.map(r=>`<tr><td style="width:26%"><b>${esc(r[0])}</b></td><td style="white-space:nowrap"><b>${esc(r[1])}</b></td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.ramp?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Плавный переход — чтобы не сорваться</h3>
-      <div class="tw"><table><tbody>${n.ramp.map(r=>`<tr><td style="width:22%;white-space:nowrap"><b>${esc(r[0])}</b></td><td style="white-space:nowrap">${esc(r[1])}</td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.macro?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">БЖУ на рабочем режиме 2000 ккал</h3>
-      <div class="tw"><table><tbody>${n.macro.map(r=>`<tr><td style="width:22%"><b>${esc(r[0])}</b></td><td style="white-space:nowrap"><b>${esc(r[1])}</b></td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.meals?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Сколько на каждый приём</h3>
-      <div class="tw"><table><tbody>${n.meals.map(r=>`<tr><td style="width:22%"><b>${esc(r[0])}</b></td><td style="white-space:nowrap"><b>${esc(r[1])}</b></td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.menu?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Меню на неделю</h3>
-      <div class="muted" style="font-size:12.5px;margin-bottom:6px">Ужин готовится на семью с запасом, и порция сразу откладывается в контейнер — это завтрашний обед. Отдельно ничего не готовится.</div>
-      <div class="tw"><table><thead><tr><th></th><th>Завтрак ~500</th><th>Обед ~700</th><th>Перекус ~250</th><th>Ужин ~550</th></tr></thead><tbody>${n.menu.map(r=>`<tr><td style="white-space:nowrap"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.fish?`<div class="note" style="margin-top:12px"><b>Поправка по рыбе:</b> ${esc(n.fish.replace(/^Поправка[^:]*:\s*/,""))}</div>`:""}
-      <h3 style="font-size:13px;margin:16px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Три правила вместо подсчёта калорий</h3>
-      <div class="tw"><table><tbody>${n.rules.map(r=>`<tr><td style="width:42%"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
-      <h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Что убрать первым — по влиянию на анализы</h3>
-      <div class="tw"><table><tbody>${n.drop.map(r=>`<tr><td style="width:32%"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
-      <h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Что добавить — недорогое</h3>
-      <ul style="margin:6px 0;padding-left:20px">${n.add.map(x=>`<li style="margin-bottom:5px">${esc(x)}</li>`).join("")}</ul>
-      ${n.taste?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Как сделать это вкусным</h3>
-      <div class="muted" style="font-size:12.5px;margin-bottom:6px">Диета срывается не из-за состава, а из-за пресности. Всё, что ниже, не стоит денег и не добавляет калорий.</div>
-      <div class="tw"><table><tbody>${n.taste.map(r=>`<tr><td style="width:30%"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.sauces?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Соусы — вкус без калорий</h3>
-      <div class="tw"><table><tbody>${n.sauces.map(r=>`<tr><td style="width:20%"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td style="white-space:nowrap">${esc(r[2])}</td><td class="muted">${esc(r[3])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.berries?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Ягоды в овсянку</h3>
-      <div class="tw"><table><tbody>${n.berries.map(r=>`<tr><td style="width:22%"><b>${esc(r[0])}</b></td><td style="white-space:nowrap">${esc(r[1])}</td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.treats?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Чем закусить чай — сладкое, которое можно</h3>
-      <div class="tw"><table><tbody>${n.treats.map(r=>`<tr><td style="width:26%"><b>${esc(r[0])}</b></td><td style="white-space:nowrap">${esc(r[1])}</td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.handy?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Что держать под рукой</h3>
-      <div class="muted" style="font-size:12.5px;margin-bottom:6px">Голод побеждается не силой воли, а тем, что оказалось в поле зрения. Задача — чтобы под рукой лежало то, чем можно наесться дёшево по калориям.</div>
-      <div class="tw"><table><tbody>${n.handy.map(r=>`<tr><td style="width:20%;white-space:nowrap"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.hunger?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Приёмы против голода</h3>
-      <div class="tw"><table><tbody>${n.hunger.map(r=>`<tr><td style="width:36%"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.swaps?`<h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Можно ли заменить</h3>
-      <div class="tw"><table><tbody>${n.swaps.map(r=>`<tr><td style="width:26%"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`:""}
-      ${n.dislikes?`<div class="note" style="margin-top:10px"><b>Личные предпочтения:</b> ${n.dislikes.map(esc).join(" · ")}</div>`:""}
-      <h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Переход — по шагу в неделю</h3>
-      <div class="tw"><table><tbody>${n.week.map(r=>`<tr><td style="width:20%;white-space:nowrap"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
-      <div class="note" style="margin-top:14px"><b>Семейный стол:</b> ${esc(n.family)}</div>
-      <h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Чем мерить результат</h3>
-      <div class="tw"><table><tbody>${n.measure.map(r=>`<tr><td style="width:34%"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>
-      <h3 style="font-size:13px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Чего делать не надо</h3>
-      <ul style="margin:6px 0;padding-left:20px">${n.never.map(x=>`<li style="margin-bottom:5px">${esc(x)}</li>`).join("")}</ul>
+      <div class="nut-hero">
+        <div>
+          <div class="cap">Цель</div>
+          <div class="big">78 кг</div>
+          <div class="muted" style="font-size:13px;margin-top:4px">сейчас 85 кг · ИМТ 27,1 · талия 97 см</div>
+          <div class="nut-bar"><i style="width:${done}%"></i></div>
+          <div class="muted" style="font-size:12px;margin-top:6px">минус 7 кг по 0,5 кг в неделю — около 3,5 месяцев</div>
+        </div>
+        <div style="text-align:center">${plate}<div class="muted" style="font-size:12px;margin-top:2px">метод тарелки</div></div>
+      </div>
+      <div class="note" style="margin-top:10px">⚠️ Быстрее нельзя: при жировой болезни печени резкое похудение ухудшает биохимию, а не улучшает. Медленный темп здесь не компромисс, а условие.</div>
+
+      ${H("📐","Сколько нужно","расчёт по формуле")}
+      ${n.calc?T3(n.calc,"26%"):""}
+
+      ${H("🪜","Плавный переход","чтобы не сорваться")}
+      ${ramp}
+      ${n.ramp?T3(n.ramp,"22%"):""}
+
+      ${H("⚖️","БЖУ на рабочем режиме","2000 ккал")}
+      ${bju}
+      ${n.macro?T3(n.macro,"22%"):""}
+
+      ${H("🕐","Сколько на каждый приём")}
+      ${n.meals?T3(n.meals,"22%"):""}
+
+      ${H("🧭","Три правила вместо подсчёта калорий")}
+      ${n.rules?T2(n.rules,"42%"):""}
+
+      ${H("🥗","Что добавить","недорогое и сытное")}
+      ${n.add?cards(n.add,"good"):""}
+
+      ${H("🚫","Что убрать первым","по влиянию на анализы")}
+      ${n.drop?cards(n.drop,"bad"):""}
+
+      ${H("🧂","Как сделать это вкусным","пресность — главная причина срывов")}
+      ${n.taste?T2(n.taste,"30%"):""}
+
+      ${H("🥄","Соусы","вкус без калорий")}
+      ${n.sauces?`<div class="tw"><table><tbody>${n.sauces.map(r=>`<tr><td style="width:20%"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td style="white-space:nowrap">${esc(r[2])}</td><td class="muted">${esc(r[3])}</td></tr>`).join("")}</tbody></table></div>`:""}
+
+      ${H("🫐","Ягоды в овсянку","100–150 г это 40–70 ккал")}
+      ${n.berries?T3(n.berries,"22%"):""}
+
+      ${H("🍫","Чем закусить чай","сладкое, которое можно")}
+      ${n.treats?T3(n.treats,"26%"):""}
+
+      ${H("🔁","Можно ли заменить")}
+      ${n.swaps?T2(n.swaps,"26%"):""}
+
+      ${H("🧺","Что держать под рукой","съедается то, что видно")}
+      ${n.handy?`<div class="tw"><table><tbody>${n.handy.map(r=>`<tr><td style="width:20%;white-space:nowrap"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
+
+      ${H("🛡","Приёмы против голода")}
+      ${n.hunger?T2(n.hunger,"36%"):""}
+
+      ${H("📅","Меню на неделю")}
+      <div class="muted" style="font-size:12.5px;margin-bottom:6px">Ужин готовится на семью с запасом, и порция сразу уходит в контейнер — это завтрашний обед. Отдельно ничего не готовится.</div>
+      ${n.menu?`<div class="tw"><table><thead><tr><th></th><th>Завтрак ~500</th><th>Обед ~700</th><th>Перекус ~250</th><th>Ужин ~550</th></tr></thead><tbody>${n.menu.map(r=>`<tr><td style="white-space:nowrap"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div>`:""}
+      ${n.fish?`<div class="note" style="margin-top:10px"><b>Про рыбу:</b> ${esc(n.fish.replace(/^Поправка[^:]*:\s*/,""))}</div>`:""}
+      ${n.dislikes?`<div class="note" style="margin-top:8px"><b>Личные предпочтения:</b> ${n.dislikes.map(esc).join(" · ")}</div>`:""}
+
+      ${H("📆","Переход по неделям","по одному изменению за раз")}
+      ${n.week?`<div class="tw"><table><tbody>${n.week.map(r=>`<tr><td style="width:20%;white-space:nowrap"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`:""}
+
+      ${n.family?`<div class="note" style="margin-top:14px"><b>👨‍👩‍👦‍👦 Семейный стол:</b> ${esc(n.family)}</div>`:""}
+
+      ${H("📊","Чем мерить результат")}
+      ${n.measure?T2(n.measure,"34%"):""}
+
+      ${H("⛔","Чего делать не надо")}
+      ${n.never?`<ul style="margin:6px 0;padding-left:20px">${n.never.map(x=>`<li style="margin-bottom:5px">${esc(x)}</li>`).join("")}</ul>`:""}
     </div>`;
   }
   else if(tab==="anam"){
