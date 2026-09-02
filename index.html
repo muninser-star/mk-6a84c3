@@ -48,15 +48,17 @@ h3{font-size:15px;margin:18px 0 8px}
 .card.flash{outline:2px solid var(--accent);outline-offset:2px}
 details.card{padding:16px;margin-bottom:16px;background:var(--card);border:1px solid var(--line);border-radius:13px}
 details.card>summary{font-size:15px;margin:0;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);
-  cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:10px}
+  cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 details.card>summary::-webkit-details-marker{display:none}
-details.card>summary::after{content:"▸";margin-left:auto;font-size:13px;transition:transform .15s ease}
+details.card>summary::after{content:"▸";margin-left:auto;font-size:13px;transition:transform .15s ease;flex:0 0 auto}
 details.card[open]>summary::after{transform:rotate(90deg)}
 details.card[open]>summary{margin-bottom:14px}
 summary .sum-cnt{font-weight:500;text-transform:none;letter-spacing:0;font-size:13px;color:var(--muted);opacity:.75}
 .hitline{font-size:13px;color:var(--muted);margin-top:3px}
 .kpi .lab{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
-.kpi .val{font-size:21px;font-weight:700;margin-top:3px}
+.kpi .val{font-size:21px;font-weight:700;margin-top:3px;overflow-wrap:anywhere;line-height:1.15}
+.kpi .val.long{font-size:16px;letter-spacing:-0.01em}
+.kpi .val.xlong{font-size:14px;letter-spacing:-0.02em}
 .kpi .sub{font-size:12px;color:var(--muted)}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;font-size:12px;text-transform:uppercase;color:var(--muted);
@@ -547,7 +549,6 @@ dima:{/*SYM:dima*/sym:{"cat":[{"n":"Мокрая ночь","sys":"uro","dx":"Н�
   note:"Паспорт здоровья: архив 2019–2023 плюс обследования 2025 – 16.08.2026",
   soon:[
     {when:"конец ноября 2026",what:"Ортопед, контроль",why:"Свод стопы, вальгус, варус коленей и осанка в динамике; проверить размер стелек; показать 25(OH)D от 12.11",sys:"ortho",st:"warn"},
-    {when:"до 01.09.2026",what:"Медосмотр перед школой, форма 026/у",why:"Закрыть Манту 2024 и получить письменное ограничение по физкультуре",sys:"immun",st:"bad"},
     {when:"07.09.2026",what:"Психиатр",why:"Приём по энурезу, а не «по поведению». Взять счёт сухих ночей",ok:1,sys:"uro",st:"warn"},
     {when:"07.09.2026",what:"Прививка от гриппа",why:"Делаем ежегодно, идём вместе с Даней",ok:1,sys:"immun",st:"warn"},
     {when:"14.09.2026",what:"Стоматолог",why:"Плановая часть медосмотра, вместе с Даней",ok:1,sys:"teeth",st:"warn"},
@@ -3116,7 +3117,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="02.09 12:51";   // подставляется при публикации
+const BUILD="02.09 13:01";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3868,7 +3869,7 @@ function render(){
       <div class="muted" style="margin:-6px 0 12px">${d.dob} · ${yrs(d.age)} · ${esc(d.note)}</div>
       <div class="grid">${d.kpi.map(k=>`<div class="kpi">
         <div class="lab">${esc(k.lab)}</div>
-        <div class="val" ${k.st?`style="color:var(--${k.st})"`:""}>${esc(k.val)}</div>
+        <div class="val ${String(k.val).length>15?"xlong":String(k.val).length>10?"long":""}" ${k.st?`style="color:var(--${k.st})"`:""}>${esc(k.val)}</div>
         <div class="sub">${esc(k.sub||"")}</div></div>`).join("")}</div>
     </div>
 
@@ -4451,7 +4452,7 @@ function render(){
           <span style="flex:1"><b>${hl(o.name)}</b><span>${hl(o.txt)}</span></span></div>`).join("")}</div></div>`:""}
       ${S.kpi.length?`<div class="card" id="s-kpi"><h2>В карточке — ${S.kpi.length}</h2>
         <div class="grid">${S.kpi.map(k=>`<div class="kpi"><div class="lab">${hl(k.lab)}</div>
-        <div class="val" ${k.st?`style="color:var(--${k.st})"`:""}>${hl(k.val)}</div>
+        <div class="val ${String(k.val).length>15?"xlong":String(k.val).length>10?"long":""}" ${k.st?`style="color:var(--${k.st})"`:""}>${hl(k.val)}</div>
         <div class="sub">${hl(k.sub||"")}</div></div>`).join("")}</div></div>`:""}
       ${S.fam.length?`<div class="card" id="s-fam"><h2>Семейный анамнез — ${S.fam.length}</h2><div class="tw"><table>
         <thead><tr><th>Кто</th><th>Что было</th></tr></thead><tbody>
