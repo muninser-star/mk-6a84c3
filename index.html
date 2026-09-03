@@ -220,6 +220,25 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .nut-h{display:flex;align-items:center;gap:8px;font-size:15px;margin:24px 0 8px;font-weight:700;letter-spacing:-.01em}
 .nut-h .ic{font-size:19px}
 .nut-h .sub{font-weight:400;font-size:12.5px;color:var(--muted)}
+.nut-today{border:1px solid var(--accent);border-radius:12px;padding:14px 16px;background:var(--accentbg);margin-bottom:14px}
+.nut-today .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.nut-today .step{font-size:16px;font-weight:700;margin:2px 0 8px}
+.nut-meal{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13.5px}
+.nut-meal b{color:var(--muted);font-weight:600}
+.chk{display:flex;gap:9px;align-items:flex-start;padding:5px 0;font-size:13.5px;cursor:pointer}
+.chk input{margin-top:3px;width:16px;height:16px;flex:0 0 auto;accent-color:var(--accent)}
+.chk.done span{text-decoration:line-through;opacity:.5}
+.shop-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.shop-col{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.shop-col h4{margin:0 0 4px;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.wbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.wbox input{width:100px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:14px}
+.wbox button{padding:7px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13.5px}
+details.nut-acc{border:1px solid var(--line);border-radius:10px;padding:10px 13px;margin:8px 0;background:var(--bg)}
+details.nut-acc>summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px}
+details.nut-acc>summary::-webkit-details-marker{display:none}
+details.nut-acc>summary::after{content:"▸";margin-left:auto;color:var(--muted)}
+details.nut-acc[open]>summary::after{transform:rotate(90deg);display:inline-block}
 @media(max-width:640px){.nut-hero{grid-template-columns:1fr}.nut-hero .big{font-size:32px}}
 .soonitem{background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--bad);
   border-radius:10px;padding:11px 13px;cursor:pointer;display:flex;flex-direction:column;gap:5px}
@@ -1851,6 +1870,17 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
     {n:"Оптинол Глубокое увлажнение",how:"По 1 капле 3 раза в день в оба глаза. ⚠️ Начал только 20.08.2026 — через 6 дней после назначения",till:"13.09.2026 по бумаге; если курс месячный, от фактического старта это 19.09.2026 — уточнить",why:"Гиалуронат натрия. Про комфорт и слёзную плёнку, на сетчатку не влияет"}
   ],
   nutrition:{
+    start:"2026-09-03",
+    shop:[["Белок","Яйца 20 шт.","Куриные бёдра и грудка ~1,5 кг","Творог 5 % — 1 кг","Кефир 1,5 л","Минтай или треска 1 кг","Чечевица 400 г","Фасоль 400 г"],
+      ["Крупы","Овсяные хлопья","Гречка","Перловка","Рис"],
+      ["Овощи","Капуста","Морковь","Лук","Картофель","Кабачки","Замороженная овощная смесь","Огурцы и помидоры"],
+      ["Фрукты и ягоды","Яблоки 1,5 кг","Груши","Замороженные ягоды 500 г — малина, смородина, черника"],
+      ["Прочее","Масло растительное","Томатная паста","Сметана 10–15 %","Горчица","Специи: паприка копчёная, зира, кориандр, орегано","Орехи 200 г"]],
+    fail:["**Один день не считается.** Сорваться на праздник, шашлык или торт — это не провал плана, это один день из ста. Недельный итог почти не меняется.",
+      "**Возвращаться со следующего приёма пищи, а не «с понедельника».** Съел лишнее в обед — ужин по плану. Правило «начну с понедельника» превращает один день в пять.",
+      "**Не отрабатывать голоданием.** Пропущенный ужин после переедания запускает качели: срыв → голод → срыв. Просто следующий приём обычный.",
+      "**Не взвешиваться на следующее утро.** После солёного и обильного вес скачет на 1–2 кг за счёт воды, к жиру это отношения не имеет — только испортит настроение.",
+      "**Если срывы каждую неделю — дело не в силе воли.** Значит дефицит слишком резкий или мало белка: вернись на ступень назад по калорийности."],
     sauces:[["Йогуртово-чесночный","йогурт натуральный или кефир + чеснок + укроп + лимон","~60 ккал на 100 г","К курице, рыбе, овощам, в шаурму из лаваша. Заменяет майонез, который в пять раз калорийнее"],
       ["Томатный универсальный","томатная паста + чеснок + прованские травы + ложка воды","~40 ккал на 100 г","База под всё: курицу, рыбу, бобовые, крупы. Готовится за две минуты, хранится неделю"],
       ["Сметанно-горчичный","сметана 10–15 % + горчица + лимон","~40 ккал на порцию 30 г","К мясу и картофелю. Горчица даёт остроту, сметаны нужно вдвое меньше, чем кажется"],
@@ -3253,7 +3283,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="03.09 09:27";   // подставляется при публикации
+const BUILD="03.09 09:37";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4355,6 +4385,17 @@ function render(){
     const T2=(rows,w)=>`<div class="tw"><table><tbody>${rows.map(r=>`<tr><td style="width:${w||"28%"}"><b>${esc(r[0])}</b></td><td class="muted">${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`;
     const T3=(rows,w)=>`<div class="tw"><table><tbody>${rows.map(r=>`<tr><td style="width:${w||"24%"}"><b>${esc(r[0])}</b></td><td style="white-space:nowrap"><b>${esc(r[1])}</b></td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`;
     const cards=(rows,cls)=>`<div class="nut-cards">${rows.map(r=>`<div class="nut-card ${cls}"><b>${esc(r[0])}</b><span>${esc(r[1]||"")}</span></div>`).join("")}</div>`;
+    const bold=t=>esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
+    const LS=(k,def)=>{try{return JSON.parse(localStorage.getItem("nut_"+k))??def}catch(e){return def}};
+    const SET=(k,v)=>{try{localStorage.setItem("nut_"+k,JSON.stringify(v))}catch(e){}};
+    const wFact=LS("weight",[]), wkDone=LS("week",[]), shopDone=LS("shop",[]);
+    // какая сейчас неделя плана
+    const st=n.start?new Date(n.start):null;
+    const wkNum=st?Math.max(1,Math.floor((Date.now()-st.getTime())/6048e5)+1):1;
+    const stepIdx=Math.min((n.week||[]).length-1,wkNum-1);
+    const DN=["Вс","Пн","Вт","Ср","Чт","Пт","Сб"], today=DN[new Date().getDay()];
+    const todayMenu=(n.menu||[]).find(r=>r[0]===today);
+    const kcalNow=wkNum<=2?"2300":wkNum<=4?"2150":"2000";
     // тарелка: половина овощи, четверть белок, четверть крупа
     const plate=`<svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Метод тарелки">
       <circle cx="60" cy="60" r="56" fill="var(--card)" stroke="var(--line)" stroke-width="2"/>
@@ -4423,9 +4464,16 @@ function render(){
         <circle cx="${x(11).toFixed(1)}" cy="${y(pts[11]).toFixed(1)}" r="4" fill="var(--warn)" stroke="var(--card)" stroke-width="1.5"/>
         <text x="${x(11).toFixed(1)}" y="${(y(pts[11])-8).toFixed(1)}" font-size="9" fill="var(--ink)" font-weight="700" text-anchor="middle">${pts[11].toFixed(1)} кг</text>
         <text x="${x(11).toFixed(1)}" y="${H-8}" font-size="8.5" fill="var(--muted)" text-anchor="middle">22.11 — анализы</text>
+        ${(LS("weight",[])||[]).map(f=>{const wk=Math.max(0,Math.min(20,Math.round((new Date(f.d)-new Date(n.start))/6048e5)));
+          return `<circle cx="${x(wk).toFixed(1)}" cy="${y(f.v).toFixed(1)}" r="3.2" fill="var(--bad)"/>`}).join("")}
+        ${(()=>{const F=LS("weight",[])||[]; if(F.length<2) return "";
+          const path=F.map((f,k2)=>{const wk=Math.max(0,Math.min(20,Math.round((new Date(f.d)-new Date(n.start))/6048e5)));
+            return `${k2?"L":"M"}${x(wk).toFixed(1)} ${y(f.v).toFixed(1)}`}).join(" ");
+          return `<path d="${path}" fill="none" stroke="var(--bad)" stroke-width="2" stroke-linejoin="round"/>`})()}
         <text x="14" y="${H-8}" font-size="8.5" fill="var(--muted)">сентябрь</text>
         <text x="286" y="${H-8}" font-size="8.5" fill="var(--muted)" text-anchor="end">январь</text>
       </svg>`})();
+    // ── состояние в браузере: галочки, покупки, замеры веса
     const done=Math.max(0,Math.min(100,Math.round((85-85)/(85-78)*100)));
     m.innerHTML=!n?`<div class="card"><div class="empty">Раздел питания для этого человека пока не заполнен</div></div>`:`
     <div class="card">
@@ -4442,8 +4490,27 @@ function render(){
       </div>
       <div class="note" style="margin-top:10px">⚠️ Быстрее нельзя: при жировой болезни печени резкое похудение ухудшает биохимию, а не улучшает. Медленный темп здесь не компромисс, а условие.</div>
 
-      ${H("📐","Сколько нужно","расчёт по формуле")}
-      ${n.calc?T3(n.calc,"26%"):""}
+      ${(()=>{const st2=n.week&&n.week[stepIdx];return `<div class="nut-today">
+        <div class="lbl">Сегодня · ${today} · неделя ${wkNum} из 6 · норма ${kcalNow} ккал</div>
+        ${st2?`<div class="step">${esc(st2[1])}</div>`:""}
+        ${todayMenu?`<div>
+          <div class="nut-meal"><b>Завтрак</b><span>${esc(todayMenu[1])}</span></div>
+          <div class="nut-meal"><b>Обед</b><span>${esc(todayMenu[2])}</span></div>
+          <div class="nut-meal"><b>Перекус</b><span>${esc(todayMenu[3])}</span></div>
+          <div class="nut-meal"><b>Ужин</b><span>${esc(todayMenu[4])}</span></div>
+        </div>`:""}
+        <div class="muted" style="font-size:12px;margin-top:8px">Ужин готовится с запасом — порция в контейнер, это завтрашний обед</div>
+      </div>`})()}
+
+      ${H("🛒","Список покупок на неделю","галочки сохраняются в этом браузере")}
+      ${n.shop?`<div class="shop-grid">${n.shop.map((col,ci)=>`<div class="shop-col"><h4>${esc(col[0])}</h4>
+        ${col.slice(1).map((it,ii)=>{const id=ci+"_"+ii, on=shopDone.includes(id);
+          return `<label class="chk ${on?"done":""}" data-shop="${id}"><input type="checkbox" ${on?"checked":""}><span>${esc(it)}</span></label>`}).join("")}
+      </div>`).join("")}<div style="align-self:end"><button class="wbox-clear" id="shopClear" style="padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--muted);cursor:pointer;font-size:13px">Снять все галочки</button></div></div>`:""}
+
+      <details class="nut-acc"><summary>📐 Расчёт: откуда взялись 2000 ккал</summary>
+      ${n.calc?T3(n.calc,"26%"):""}      </details>
+
 
       ${H("🪜","Плавный переход","чтобы не сорваться")}
       ${ramp}
@@ -4465,48 +4532,92 @@ function render(){
       ${H("🚫","Что убрать первым","по влиянию на анализы")}
       ${n.drop?cards(n.drop,"bad"):""}
 
-      ${H("🧂","Как сделать это вкусным","пресность — главная причина срывов")}
-      ${n.taste?T2(n.taste,"30%"):""}
+      <details class="nut-acc"><summary>🧂 Как сделать это вкусным — 10 приёмов</summary>
+      ${n.taste?T2(n.taste,"30%"):""}      </details>
 
-      ${H("🥄","Соусы","вкус без калорий")}
-      ${n.sauces?`<div class="tw"><table><tbody>${n.sauces.map(r=>`<tr><td style="width:20%"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td style="white-space:nowrap">${esc(r[2])}</td><td class="muted">${esc(r[3])}</td></tr>`).join("")}</tbody></table></div>`:""}
 
-      ${H("🫐","Ягоды в овсянку","100–150 г это 40–70 ккал")}
-      ${n.berries?T3(n.berries,"22%"):""}
+      <details class="nut-acc"><summary>🥄 Соусы: вкус без калорий</summary>
+      ${n.sauces?`<div class="tw"><table><tbody>${n.sauces.map(r=>`<tr><td style="width:20%"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td style="white-space:nowrap">${esc(r[2])}</td><td class="muted">${esc(r[3])}</td></tr>`).join("")}</tbody></table></div>`:""}      </details>
 
-      ${H("🍫","Чем закусить чай","сладкое, которое можно")}
-      ${n.treats?T3(n.treats,"26%"):""}
 
-      ${H("🔁","Можно ли заменить")}
-      ${n.swaps?T2(n.swaps,"26%"):""}
+      <details class="nut-acc"><summary>🫐 Ягоды в овсянку</summary>
+      ${n.berries?T3(n.berries,"22%"):""}      </details>
 
-      ${H("🧺","Что держать под рукой","съедается то, что видно")}
-      ${n.handy?`<div class="tw"><table><tbody>${n.handy.map(r=>`<tr><td style="width:20%;white-space:nowrap"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}
 
-      ${H("🛡","Приёмы против голода")}
-      ${n.hunger?T2(n.hunger,"36%"):""}
+      <details class="nut-acc"><summary>🍫 Чем закусить чай — сладкое, которое можно</summary>
+      ${n.treats?T3(n.treats,"26%"):""}      </details>
 
-      ${H("📅","Меню на неделю")}
+
+      <details class="nut-acc"><summary>🔁 Можно ли заменить: гранола, йогурт, сок</summary>
+      ${n.swaps?T2(n.swaps,"26%"):""}      </details>
+
+
+      <details class="nut-acc"><summary>🧺 Что держать под рукой</summary>
+      ${n.handy?`<div class="tw"><table><tbody>${n.handy.map(r=>`<tr><td style="width:20%;white-space:nowrap"><b>${esc(r[0])}</b></td><td style="width:26%">${esc(r[1])}</td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`:""}      </details>
+
+
+      <details class="nut-acc"><summary>🛡 Приёмы против голода</summary>
+      ${n.hunger?T2(n.hunger,"36%"):""}      </details>
+
+
+      <details class="nut-acc"><summary>📅 Меню на всю неделю</summary>
       <div class="muted" style="font-size:12.5px;margin-bottom:6px">Ужин готовится на семью с запасом, и порция сразу уходит в контейнер — это завтрашний обед. Отдельно ничего не готовится.</div>
       ${n.menu?`<div class="tw"><table><thead><tr><th></th><th>Завтрак ~500</th><th>Обед ~700</th><th>Перекус ~250</th><th>Ужин ~550</th></tr></thead><tbody>${n.menu.map(r=>`<tr><td style="white-space:nowrap"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div>`:""}
       ${n.fish?`<div class="note" style="margin-top:10px"><b>Про рыбу:</b> ${esc(n.fish.replace(/^Поправка[^:]*:\s*/,""))}</div>`:""}
-      ${n.dislikes?`<div class="note" style="margin-top:8px"><b>Личные предпочтения:</b> ${n.dislikes.map(esc).join(" · ")}</div>`:""}
+      ${n.dislikes?`<div class="note" style="margin-top:8px"><b>Личные предпочтения:</b> ${n.dislikes.map(esc).join(" · ")}</div>`:""}      </details>
 
-      ${H("📆","Переход по неделям","по одному изменению за раз")}
-      ${n.week?`<div class="tw"><table><tbody>${n.week.map(r=>`<tr><td style="width:20%;white-space:nowrap"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div>`:""}
+
+      ${H("📆","Переход по неделям","отмечай, что уже стало привычкой")}
+      ${n.week?`<div>${n.week.map((r,k)=>{const on=wkDone.includes(k);
+        return `<label class="chk ${on?"done":""}" data-week="${k}" style="border-top:1px solid var(--line);padding:8px 0">
+          <input type="checkbox" ${on?"checked":""}>
+          <span><b>${esc(r[0])}${k===stepIdx?" — сейчас":""}</b> — ${esc(r[1])}</span></label>`}).join("")}</div>`:""}
 
       ${n.family?`<div class="note" style="margin-top:14px"><b>👨‍👩‍👦‍👦 Семейный стол:</b> ${esc(n.family)}</div>`:""}
 
       ${H("📈","Как это должно выглядеть по неделям","прогноз при соблюдении режима")}
       ${curve}
-      <div class="muted" style="font-size:12.5px;margin-top:-8px">К контрольным анализам 22.11.2026 ожидаемо около 81 кг — минус 4 кг. Цель 78 кг достигается примерно к середине января. Плато в 1–2 недели это норма: не срезай калории, добавь шагов.</div>
+      <div class="muted" style="font-size:12.5px;margin-top:-8px">Синяя линия — план, красные точки — твои замеры (записываются ниже). К контрольным анализам 22.11.2026 ожидаемо около 81 кг — минус 4 кг. Цель 78 кг достигается примерно к середине января. Плато в 1–2 недели это норма: не срезай калории, добавь шагов.</div>
 
-      ${H("📊","Чем мерить результат")}
-      ${n.measure?T2(n.measure,"34%"):""}
+      ${H("⚖️","Записать вес","раз в неделю, утром натощак")}
+      <div class="wbox"><input id="wIn" type="number" step="0.1" min="50" max="150" placeholder="85.0"><button id="wAdd">Записать</button>
+        <span class="muted" style="font-size:12.5px">${wFact.length?`последний: <b>${wFact[wFact.length-1].v} кг</b> · ${ru(wFact[wFact.length-1].d)} · всего замеров: ${wFact.length}`:"замеров пока нет — точки появятся на графике выше"}</span></div>
+      ${wFact.length>1?`<div class="muted" style="font-size:12.5px">Изменение с первого замера: <b>${(wFact[wFact.length-1].v-wFact[0].v).toFixed(1)} кг</b></div>`:""}
 
-      ${H("⛔","Чего делать не надо")}
-      ${n.never?`<ul style="margin:6px 0;padding-left:20px">${n.never.map(x=>`<li style="margin-bottom:5px">${esc(x)}</li>`).join("")}</ul>`:""}
+      <details class="nut-acc"><summary>🩹 Если сорвался</summary>
+      ${n.fail?`<div>${n.fail.map(x=>`<div style="padding:7px 0;border-top:1px solid var(--line);font-size:13.5px">${bold(x)}</div>`).join("")}</div>`:""}      </details>
+
+
+      <details class="nut-acc"><summary>📊 Чем мерить результат</summary>
+      ${n.measure?T2(n.measure,"34%"):""}      </details>
+
+
+      <details class="nut-acc"><summary>⛔ Чего делать не надо</summary>
+      ${n.never?`<ul style="margin:6px 0;padding-left:20px">${n.never.map(x=>`<li style="margin-bottom:5px">${esc(x)}</li>`).join("")}</ul>`:""}      </details>
+
     </div>`;
+    // клики: галочки покупок, галочки недель, запись веса
+    m.querySelectorAll("[data-shop]").forEach(el=>el.addEventListener("change",()=>{
+      const id=el.dataset.shop, cur=LS("shop",[]);
+      const nx=el.querySelector("input").checked?[...new Set([...cur,id])]:cur.filter(x=>x!==id);
+      SET("shop",nx); el.classList.toggle("done",el.querySelector("input").checked);
+    }));
+    m.querySelectorAll("[data-week]").forEach(el=>el.addEventListener("change",()=>{
+      const k=+el.dataset.week, cur=LS("week",[]);
+      const nx=el.querySelector("input").checked?[...new Set([...cur,k])]:cur.filter(x=>x!==k);
+      SET("week",nx); el.classList.toggle("done",el.querySelector("input").checked);
+    }));
+    const sc=document.getElementById("shopClear");
+    if(sc) sc.addEventListener("click",()=>{SET("shop",[]);render()});
+    const wa=document.getElementById("wAdd"), wi=document.getElementById("wIn");
+    if(wa&&wi){
+      const save=()=>{const v=parseFloat(String(wi.value).replace(",","."));
+        if(!v||v<40||v>200){wi.focus();return}
+        const d=new Date().toISOString().slice(0,10), cur=LS("weight",[]).filter(x=>x.d!==d);
+        SET("weight",[...cur,{d,v:Math.round(v*10)/10}].sort((a,b)=>a.d<b.d?-1:1)); render();};
+      wa.addEventListener("click",save);
+      wi.addEventListener("keydown",e=>{if(e.key==="Enter")save()});
+    }
   }
   else if(tab==="anam"){
     const q=query.toLowerCase();
