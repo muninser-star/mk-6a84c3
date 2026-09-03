@@ -3283,7 +3283,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="03.09 09:53";   // подставляется при публикации
+const BUILD="03.09 09:59";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3350,6 +3350,43 @@ function nutMerge(list){
   const map={};
   list.filter(x=>x&&x.d&&x.v).forEach(x=>{map[x.d]=Object.assign({},map[x.d]||{},x)});
   return Object.values(map).sort((a,b)=>a.d<b.d?-1:1);
+}
+// форма замера — одна на все экраны
+function nutForm(){
+  const F=nutLS("weight",[]), last=F[F.length-1], first=F[0];
+  const dd=(a,b)=>a!=null&&b!=null?(a-b).toFixed(1):null;
+  return `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Записать замер — утром натощак</div>
+    <div class="wbox" style="margin:0">
+      <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Вес, кг</span><input id="wIn" type="number" inputmode="decimal" step="0.1" min="40" max="200" placeholder="${last&&last.v?last.v:"85.0"}" style="width:78px"></label>
+      <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Жир, %</span><input id="fIn" type="number" inputmode="decimal" step="0.1" min="3" max="60" placeholder="${last&&last.fat?last.fat:"—"}" style="width:72px"></label>
+      <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Вода, %</span><input id="hIn" type="number" inputmode="decimal" step="0.1" min="30" max="80" placeholder="${last&&last.water?last.water:"—"}" style="width:72px"></label>
+      <button id="wAdd" style="align-self:end">Записать</button>
+    </div>
+    <div id="wMsg" class="muted" style="font-size:12px;margin-top:6px">${last?`последний: <b>${last.v} кг</b>${last.fat?` · жир ${last.fat} %`:""}${last.water?` · вода ${last.water} %`:""} · ${ru(last.d)}${
+      F.length>1?` · с первого замера <b>${dd(last.v,first.v)} кг</b>`:""}`:"замеров пока нет — цифры сохранятся на всех устройствах"}</div>`;
+}
+function nutBind(){
+  const wa=document.getElementById("wAdd"), wi=document.getElementById("wIn"),
+        fi=document.getElementById("fIn"), hi=document.getElementById("hIn");
+  if(!wa||!wi||wa.dataset.on) return;
+  wa.dataset.on="1";
+  const num=el=>{const v=parseFloat(String(el&&el.value||"").replace(",","."));return isFinite(v)?Math.round(v*10)/10:null};
+  const save=()=>{
+    const v=num(wi), fat=num(fi), water=num(hi);
+    if(!v||v<40||v>200){wi.focus();return}
+    const d=new Date().toISOString().slice(0,10);
+    nutSET("weight",nutMerge([...nutLS("weight",[]),{d,v,fat,water}]));
+    render();                                     // цифра на экране сразу, не дожидаясь сети
+    const st=document.getElementById("wMsg");
+    if(st) st.innerHTML+=' · <span class="muted">отправляю…</span>';
+    const row=[d,"Денис",String(v).replace(".",","),fat==null?"":String(fat).replace(".",","),water==null?"":String(water).replace(".",","),"медкнижка"];
+    const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error("долго")),8000));
+    Promise.race([sendRow(MEAS_SHEET,row,()=>{}),to])
+      .then(()=>{const e2=document.getElementById("wMsg"); if(e2) e2.innerHTML=e2.innerHTML.replace(/ · <span class="muted">отправляю…<\/span>/,' · <span style="color:var(--ok)">в таблице</span>')})
+      .catch(()=>{const e2=document.getElementById("wMsg"); if(e2) e2.innerHTML=e2.innerHTML.replace(/ · <span class="muted">отправляю…<\/span>/,' · <span class="muted">уйдёт при синхронизации</span>')});
+  };
+  wa.addEventListener("click",save);
+  [wi,fi,hi].forEach(el=>el&&el.addEventListener("keydown",e=>{if(e.key==="Enter")save()}));
 }
 async function nutPull(force){
   if(!gToken) return false;
@@ -4066,6 +4103,8 @@ function render(){
         <div class="sub">${esc(k.sub||"")}</div></div>`).join("")}</div>
     </div>
 
+    ${d.nutrition?`<div class="card" style="padding:13px 16px">${nutForm()}</div>`:""}
+
     ${d.alarm?`<div class="card" style="border-color:var(--bad)">
       <h2 style="color:var(--bad)">Когда не ждать записи — ехать в тот же день</h2>
       <div class="muted" style="margin:-6px 0 12px">Короткий список, ради которого всё остальное может подождать. Если ничего из этого нет — значит и спешить некуда.</div>
@@ -4511,19 +4550,7 @@ function render(){
           <div class="muted" style="font-size:13px;margin-top:4px">сейчас 85 кг · ИМТ 27,1 · талия 97 см</div>
           <div class="nut-bar"><i style="width:${done}%"></i></div>
           <div class="muted" style="font-size:12px;margin-top:6px">минус 7 кг по 0,5 кг в неделю — около 3,5 месяцев</div>
-          ${(()=>{const F=LS("weight",[]), last=F[F.length-1], first=F[0];
-            const dd=(a,b)=>a!=null&&b!=null?(a-b).toFixed(1):null;
-            return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
-              <div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Записать замер — утром натощак</div>
-              <div class="wbox" style="margin:0">
-                <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Вес, кг</span><input id="wIn" type="number" inputmode="decimal" step="0.1" min="40" max="200" placeholder="${last&&last.v?last.v:"85.0"}" style="width:78px"></label>
-                <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Жир, %</span><input id="fIn" type="number" inputmode="decimal" step="0.1" min="3" max="60" placeholder="${last&&last.fat?last.fat:"—"}" style="width:72px"></label>
-                <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Вода, %</span><input id="hIn" type="number" inputmode="decimal" step="0.1" min="30" max="80" placeholder="${last&&last.water?last.water:"—"}" style="width:72px"></label>
-                <button id="wAdd" style="align-self:end">Записать</button>
-              </div>
-              <div id="wMsg" class="muted" style="font-size:12px;margin-top:6px">${last?`последний: <b>${last.v} кг</b>${last.fat?` · жир ${last.fat} %`:""}${last.water?` · вода ${last.water} %`:""} · ${ru(last.d)}${
-                F.length>1?` · с первого замера <b>${dd(last.v,first.v)} кг</b>`:""}`:"замеров пока нет — цифры лягут на график ниже и сохранятся на всех устройствах"}</div>
-            </div>`})()}
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">${nutForm()}</div>
         </div>
         <div style="text-align:center">${plate}<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.4">метод тарелки — по схеме Американской диабетической ассоциации.<br><b>Картофель считается крупой, а не овощем</b></div></div>
       </div>
@@ -4643,27 +4670,6 @@ function render(){
     }));
     const sc=document.getElementById("shopClear");
     if(sc) sc.addEventListener("click",()=>{SET("shop",[]);render()});
-    const wa=document.getElementById("wAdd"), wi=document.getElementById("wIn"),
-          fi=document.getElementById("fIn"), hi=document.getElementById("hIn"), wm=document.getElementById("wMsg");
-    if(wa&&wi){
-      const num=el=>{const v=parseFloat(String(el&&el.value||"").replace(",","."));return isFinite(v)?Math.round(v*10)/10:null};
-      const save=()=>{
-        const v=num(wi), fat=num(fi), water=num(hi);
-        if(!v||v<40||v>200){wi.focus();return}
-        const d=new Date().toISOString().slice(0,10);
-        SET("weight",nutMerge([...LS("weight",[]),{d,v,fat,water}]));
-        render();                                   // цифра на экране сразу, не дожидаясь сети
-        const st2=document.getElementById("wMsg");
-        if(st2) st2.innerHTML+=" · <span class=\"muted\">отправляю…</span>";
-        const row=[d,"Денис",String(v).replace(".",","),fat==null?"":String(fat).replace(".",","),water==null?"":String(water).replace(".",","),"медкнижка"];
-        const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("долго")),8000));
-        Promise.race([sendRow(MEAS_SHEET,row,()=>{}),timeout])
-          .then(()=>{const e2=document.getElementById("wMsg"); if(e2) e2.innerHTML=e2.innerHTML.replace(/ · <span class="muted">отправляю…<\/span>/,' · <span style="color:var(--ok)">в таблице</span>')})
-          .catch(()=>{const e2=document.getElementById("wMsg"); if(e2) e2.innerHTML=e2.innerHTML.replace(/ · <span class="muted">отправляю…<\/span>/,' · <span class="muted">уйдёт при синхронизации</span>')});
-      };
-      wa.addEventListener("click",save);
-      [wi,fi,hi].forEach(el=>el&&el.addEventListener("keydown",e=>{if(e.key==="Enter")save()}));
-    }
     // подтянуть замеры с других устройств
     nutPull().then(ok=>{ if(ok&&tab==="nutr") render() });
   }
@@ -4928,6 +4934,7 @@ function render(){
         ${S.ser.map(x=>`<h3>${hl(x.name)}<span class="muted">, ${esc(x.unit)}</span></h3>${chart(x)}`).join("")}
       </div>`:""}`;
   }
+  nutBind();
 }
 
 // ── События
