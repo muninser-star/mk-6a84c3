@@ -3283,7 +3283,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="03.09 10:12";   // подставляется при публикации
+const BUILD="03.09 10:18";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3371,7 +3371,8 @@ function nutChart(){
   const fact=F.filter(f=>f.v).map(f=>({wk:wkOf(f.d),v:f.v,d:f.d})).filter(f=>f.wk>=-0.5&&f.wk<=maxWk+0.5);
   const factLine=fact.length>1?`<path d="${fact.map((f,k)=>`${k?"L":"M"}${x(f.wk).toFixed(1)} ${y(f.v).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--bad)" stroke-width="2.5" stroke-linejoin="round"/>`:"";
   const todayWk=wkOf(new Date().toISOString().slice(0,10));
-  const months=[["2026-09-03","сен"],["2026-10-01","окт"],["2026-11-01","ноя"],["2026-12-01","дек"],["2027-01-01","янв"]];
+  const dm=d=>{const x=new Date(d);return String(x.getDate()).padStart(2,"0")+"."+String(x.getMonth()+1).padStart(2,"0")};
+  const ticks=[];for(let k=0;k<=maxWk;k+=4){const t=new Date(NUT_START);t.setDate(t.getDate()+k*7);ticks.push([k,dm(t)])}
   const gridV=[hi,Math.round((hi+lo)/2),lo];
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="План снижения веса и фактические замеры">
     ${gridV.map(v=>`<line x1="${L}" y1="${y(v).toFixed(1)}" x2="${W-R}" y2="${y(v).toFixed(1)}" stroke="var(--line)" stroke-width="1"/>
@@ -3383,16 +3384,16 @@ function nutChart(){
     ${NUT_MILE.map(([d,lab])=>{const wk=wkOf(d); if(wk<0||wk>maxWk) return "";
       return `<line x1="${x(wk).toFixed(1)}" y1="${T-6}" x2="${x(wk).toFixed(1)}" y2="${H-B}" stroke="var(--warn)" stroke-width="1.2" stroke-dasharray="3 3"/>
         <circle cx="${x(wk).toFixed(1)}" cy="${y(plan[Math.round(wk)]).toFixed(1)}" r="4.5" fill="var(--warn)" stroke="var(--card)" stroke-width="1.5"/>
-        <text x="${x(wk).toFixed(1)}" y="${T-10}" font-size="11" fill="var(--ink)" font-weight="600" text-anchor="middle">${esc(lab)}</text>
+        <text x="${x(wk).toFixed(1)}" y="${T-10}" font-size="11" fill="var(--ink)" font-weight="600" text-anchor="middle">${dm(d)} · ${esc(lab)}</text>
         <text x="${x(wk).toFixed(1)}" y="${(y(plan[Math.round(wk)])-10).toFixed(1)}" font-size="10.5" fill="var(--muted)" text-anchor="middle">${plan[Math.round(wk)].toFixed(1)} кг</text>`}).join("")}
     ${todayWk>=0&&todayWk<=maxWk?`<line x1="${x(todayWk).toFixed(1)}" y1="${T-2}" x2="${x(todayWk).toFixed(1)}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" opacity=".5"/>
-      <text x="${x(todayWk).toFixed(1)}" y="${H-B+14}" font-size="10.5" fill="var(--muted)" text-anchor="middle">сегодня</text>`:""}
+      <text x="${x(todayWk).toFixed(1)}" y="${H-B+14}" font-size="10.5" fill="var(--muted)" text-anchor="middle">сегодня, ${dm(new Date().toISOString().slice(0,10))}</text>`:""}
     ${factLine}
     ${fact.map(f=>`<circle cx="${x(f.wk).toFixed(1)}" cy="${y(f.v).toFixed(1)}" r="4" fill="var(--bad)"/>`).join("")}
     ${fact.length?`<text x="${x(fact[fact.length-1].wk).toFixed(1)}" y="${(y(fact[fact.length-1].v)+18).toFixed(1)}" font-size="11" fill="var(--bad)" font-weight="700" text-anchor="middle">${fact[fact.length-1].v} кг</text>`:""}
     <circle cx="${x(0).toFixed(1)}" cy="${y(NUT_W0).toFixed(1)}" r="3.5" fill="var(--accent)"/>
-    ${months.map(([d,lab])=>{const wk=wkOf(d); if(wk<0||wk>maxWk) return "";
-      return `<text x="${x(wk).toFixed(1)}" y="${H-B+30}" font-size="11" fill="var(--muted)" text-anchor="middle">${lab}</text>`}).join("")}
+    ${ticks.map(([k,lab])=>`<line x1="${x(k).toFixed(1)}" y1="${H-B}" x2="${x(k).toFixed(1)}" y2="${H-B+4}" stroke="var(--line)" stroke-width="1"/>
+      <text x="${x(k).toFixed(1)}" y="${H-B+30}" font-size="11" fill="var(--muted)" text-anchor="middle">${lab}</text>`).join("")}
     <text x="${L}" y="${H-6}" font-size="10.5" fill="var(--muted)">— план</text>
     <text x="${L+70}" y="${H-6}" font-size="10.5" fill="var(--bad)">— твои замеры</text>
   </svg>`;
