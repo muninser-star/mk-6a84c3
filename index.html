@@ -3283,7 +3283,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="03.09 09:37";   // подставляется при публикации
+const BUILD="03.09 09:53";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3342,6 +3342,33 @@ function showPending(){
   });
 }
 function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
+// ── Замеры тела: локально + таблица «23_Замеры_тела» на Диске, чтобы сходилось между телефоном и компьютером
+const MEAS_SHEET="23_Замеры_тела";
+const nutLS=(k,def)=>{try{const v=JSON.parse(localStorage.getItem("nut_"+k));return v==null?def:v}catch(e){return def}};
+const nutSET=(k,v)=>{try{localStorage.setItem("nut_"+k,JSON.stringify(v))}catch(e){}};
+function nutMerge(list){
+  const map={};
+  list.filter(x=>x&&x.d&&x.v).forEach(x=>{map[x.d]=Object.assign({},map[x.d]||{},x)});
+  return Object.values(map).sort((a,b)=>a.d<b.d?-1:1);
+}
+async function nutPull(force){
+  if(!gToken) return false;
+  if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 3e5) return false;
+  try{
+    const l=await gapi(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=200`);
+    const f=(l.files||[]).find(x=>x.name===MEAS_SHEET);
+    if(!f) return false;
+    const r=await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${f.id}/values/A1:F10000`);
+    const num=x=>{const v=parseFloat(String(x||"").replace(",","."));return isFinite(v)?v:null};
+    const remote=(r.values||[]).slice(1)
+      .filter(x=>x[0]&&/^\d{4}-\d{2}-\d{2}$/.test(x[0].trim()))
+      .map(x=>({d:x[0].trim(),v:num(x[2]),fat:num(x[3]),water:num(x[4])}));
+    const merged=nutMerge([...remote,...nutLS("weight",[])]);
+    nutSET("weight",merged);
+    localStorage.setItem("nut_pull",Date.now());
+    return true;
+  }catch(e){ return false }
+}
 function qPush(sheet,row){ const arr=qLoad(); arr.push({sheet,row}); try{ localStorage.setItem(QKEY,JSON.stringify(arr)); }catch(e){} }
 let qLastError="";
 async function qFlush(){
@@ -4386,8 +4413,7 @@ function render(){
     const T3=(rows,w)=>`<div class="tw"><table><tbody>${rows.map(r=>`<tr><td style="width:${w||"24%"}"><b>${esc(r[0])}</b></td><td style="white-space:nowrap"><b>${esc(r[1])}</b></td><td class="muted">${esc(r[2])}</td></tr>`).join("")}</tbody></table></div>`;
     const cards=(rows,cls)=>`<div class="nut-cards">${rows.map(r=>`<div class="nut-card ${cls}"><b>${esc(r[0])}</b><span>${esc(r[1]||"")}</span></div>`).join("")}</div>`;
     const bold=t=>esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>");
-    const LS=(k,def)=>{try{return JSON.parse(localStorage.getItem("nut_"+k))??def}catch(e){return def}};
-    const SET=(k,v)=>{try{localStorage.setItem("nut_"+k,JSON.stringify(v))}catch(e){}};
+    const LS=nutLS, SET=nutSET;
     const wFact=LS("weight",[]), wkDone=LS("week",[]), shopDone=LS("shop",[]);
     // какая сейчас неделя плана
     const st=n.start?new Date(n.start):null;
@@ -4485,6 +4511,19 @@ function render(){
           <div class="muted" style="font-size:13px;margin-top:4px">сейчас 85 кг · ИМТ 27,1 · талия 97 см</div>
           <div class="nut-bar"><i style="width:${done}%"></i></div>
           <div class="muted" style="font-size:12px;margin-top:6px">минус 7 кг по 0,5 кг в неделю — около 3,5 месяцев</div>
+          ${(()=>{const F=LS("weight",[]), last=F[F.length-1], first=F[0];
+            const dd=(a,b)=>a!=null&&b!=null?(a-b).toFixed(1):null;
+            return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+              <div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Записать замер — утром натощак</div>
+              <div class="wbox" style="margin:0">
+                <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Вес, кг</span><input id="wIn" type="number" inputmode="decimal" step="0.1" min="40" max="200" placeholder="${last&&last.v?last.v:"85.0"}" style="width:78px"></label>
+                <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Жир, %</span><input id="fIn" type="number" inputmode="decimal" step="0.1" min="3" max="60" placeholder="${last&&last.fat?last.fat:"—"}" style="width:72px"></label>
+                <label style="display:flex;flex-direction:column;gap:2px"><span class="muted" style="font-size:11px">Вода, %</span><input id="hIn" type="number" inputmode="decimal" step="0.1" min="30" max="80" placeholder="${last&&last.water?last.water:"—"}" style="width:72px"></label>
+                <button id="wAdd" style="align-self:end">Записать</button>
+              </div>
+              <div id="wMsg" class="muted" style="font-size:12px;margin-top:6px">${last?`последний: <b>${last.v} кг</b>${last.fat?` · жир ${last.fat} %`:""}${last.water?` · вода ${last.water} %`:""} · ${ru(last.d)}${
+                F.length>1?` · с первого замера <b>${dd(last.v,first.v)} кг</b>`:""}`:"замеров пока нет — цифры лягут на график ниже и сохранятся на всех устройствах"}</div>
+            </div>`})()}
         </div>
         <div style="text-align:center">${plate}<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.4">метод тарелки — по схеме Американской диабетической ассоциации.<br><b>Картофель считается крупой, а не овощем</b></div></div>
       </div>
@@ -4579,11 +4618,6 @@ function render(){
       ${curve}
       <div class="muted" style="font-size:12.5px;margin-top:-8px">Синяя линия — план, красные точки — твои замеры (записываются ниже). К контрольным анализам 22.11.2026 ожидаемо около 81 кг — минус 4 кг. Цель 78 кг достигается примерно к середине января. Плато в 1–2 недели это норма: не срезай калории, добавь шагов.</div>
 
-      ${H("⚖️","Записать вес","раз в неделю, утром натощак")}
-      <div class="wbox"><input id="wIn" type="number" step="0.1" min="50" max="150" placeholder="85.0"><button id="wAdd">Записать</button>
-        <span class="muted" style="font-size:12.5px">${wFact.length?`последний: <b>${wFact[wFact.length-1].v} кг</b> · ${ru(wFact[wFact.length-1].d)} · всего замеров: ${wFact.length}`:"замеров пока нет — точки появятся на графике выше"}</span></div>
-      ${wFact.length>1?`<div class="muted" style="font-size:12.5px">Изменение с первого замера: <b>${(wFact[wFact.length-1].v-wFact[0].v).toFixed(1)} кг</b></div>`:""}
-
       <details class="nut-acc"><summary>🩹 Если сорвался</summary>
       ${n.fail?`<div>${n.fail.map(x=>`<div style="padding:7px 0;border-top:1px solid var(--line);font-size:13.5px">${bold(x)}</div>`).join("")}</div>`:""}      </details>
 
@@ -4609,15 +4643,29 @@ function render(){
     }));
     const sc=document.getElementById("shopClear");
     if(sc) sc.addEventListener("click",()=>{SET("shop",[]);render()});
-    const wa=document.getElementById("wAdd"), wi=document.getElementById("wIn");
+    const wa=document.getElementById("wAdd"), wi=document.getElementById("wIn"),
+          fi=document.getElementById("fIn"), hi=document.getElementById("hIn"), wm=document.getElementById("wMsg");
     if(wa&&wi){
-      const save=()=>{const v=parseFloat(String(wi.value).replace(",","."));
+      const num=el=>{const v=parseFloat(String(el&&el.value||"").replace(",","."));return isFinite(v)?Math.round(v*10)/10:null};
+      const save=()=>{
+        const v=num(wi), fat=num(fi), water=num(hi);
         if(!v||v<40||v>200){wi.focus();return}
-        const d=new Date().toISOString().slice(0,10), cur=LS("weight",[]).filter(x=>x.d!==d);
-        SET("weight",[...cur,{d,v:Math.round(v*10)/10}].sort((a,b)=>a.d<b.d?-1:1)); render();};
+        const d=new Date().toISOString().slice(0,10);
+        SET("weight",nutMerge([...LS("weight",[]),{d,v,fat,water}]));
+        render();                                   // цифра на экране сразу, не дожидаясь сети
+        const st2=document.getElementById("wMsg");
+        if(st2) st2.innerHTML+=" · <span class=\"muted\">отправляю…</span>";
+        const row=[d,"Денис",String(v).replace(".",","),fat==null?"":String(fat).replace(".",","),water==null?"":String(water).replace(".",","),"медкнижка"];
+        const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("долго")),8000));
+        Promise.race([sendRow(MEAS_SHEET,row,()=>{}),timeout])
+          .then(()=>{const e2=document.getElementById("wMsg"); if(e2) e2.innerHTML=e2.innerHTML.replace(/ · <span class="muted">отправляю…<\/span>/,' · <span style="color:var(--ok)">в таблице</span>')})
+          .catch(()=>{const e2=document.getElementById("wMsg"); if(e2) e2.innerHTML=e2.innerHTML.replace(/ · <span class="muted">отправляю…<\/span>/,' · <span class="muted">уйдёт при синхронизации</span>')});
+      };
       wa.addEventListener("click",save);
-      wi.addEventListener("keydown",e=>{if(e.key==="Enter")save()});
+      [wi,fi,hi].forEach(el=>el&&el.addEventListener("keydown",e=>{if(e.key==="Enter")save()}));
     }
+    // подтянуть замеры с других устройств
+    nutPull().then(ok=>{ if(ok&&tab==="nutr") render() });
   }
   else if(tab==="anam"){
     const q=query.toLowerCase();
