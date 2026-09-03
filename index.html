@@ -1923,10 +1923,10 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
       ["Углеводы","200 г","40 %. Не низкоуглеводка: при HbA1c 5,7 важнее убрать быстрые сахара, чем срезать все углеводы"],
       ["Клетчатка","30 г","работает и на печень, и на сахар, и на сытость"],
       ["Соль / вода","до 5 г / 1,5–2 л","норма кардиолога; вода при мочевой кислоте 439 — лечебная мера"]],
-    meals:[["Завтрак","500 ккал","обязательно с белком, иначе к 11 утра тянет к печенью"],
-      ["Обед","700 ккал","самый плотный. Не готовится отдельно: это порция вчерашнего ужина в контейнере"],
-      ["Перекус","250 ккал","между обедом и ужином, чтобы вечером не есть за двоих"],
-      ["Ужин","550 ккал","за 2–3 часа до сна: при отбое в час ночи это около 22:00"]],
+    meals:[["Завтрак","8:00","500 ккал","обязательно с белком, иначе к 11 утра тянет к печенью"],
+      ["Обед","13:00","700 ккал","самый плотный. Не готовится отдельно: это порция вчерашнего ужина в контейнере"],
+      ["Перекус","17:00","250 ккал","между обедом и ужином, чтобы вечером не есть за двоих"],
+      ["Ужин","22:00","550 ккал","за 2–3 часа до сна: при отбое в час ночи это как раз 22:00"]],
     menu:[["Пн","Овсянка + яйцо + яблоко","Гречка + куриное бедро 150 г + капустный салат","Творог 150 г","Минтай 200 г + овощи тушёные 300 г"],
       ["Вт","Творог 200 г + хлеб + яйцо","Минтай с овощами (вчерашний) + рис","Кефир + яблоко","Курица 180 г + гречка + салат"],
       ["Ср","Омлет из 3 яиц + хлеб + помидор","Курица с гречкой (вчерашняя)","Яйцо + яблоко","Чечевичный суп + хлеб + грудка 120 г"],
@@ -3253,7 +3253,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="03.09 09:22";   // подставляется при публикации
+const BUILD="03.09 09:27";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4387,15 +4387,27 @@ function render(){
       <text x="134" y="42" font-size="10" fill="var(--muted)" text-anchor="middle">70 г</text>
       <text x="242" y="42" font-size="10" fill="var(--muted)" text-anchor="middle">200 г</text>
     </svg>`;
-    // кольцо: распределение калорий по приёмам
-    const ring=(()=>{const parts=[["Завтрак",500,"var(--accent)"],["Обед",700,"var(--ok)"],["Перекус",250,"var(--warn)"],["Ужин",550,"var(--bad)"]];
-      const tot=parts.reduce((a,b)=>a+b[1],0), R=52, C=2*Math.PI*R; let off=0;
-      const segs=parts.map(([nm,v,c])=>{const len=v/tot*C, el=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="${c}" stroke-width="20" stroke-dasharray="${len-2} ${C-len+2}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)" opacity=".9"/>`; off+=len; return el}).join("");
-      return `<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
-        <svg viewBox="0 0 140 140" width="150" height="150" role="img" aria-label="Калории по приёмам">${segs}
-          <text x="70" y="66" font-size="19" font-weight="800" fill="var(--ink)" text-anchor="middle">2000</text>
+    // кольцо: распределение калорий по приёмам, с временем и подписями
+    const ring=(()=>{const cols=["var(--accent)","var(--ok)","var(--warn)","var(--bad)"];
+      const rows=(n.meals||[]).map((r,k)=>({nm:r[0],time:r[1],kcal:r[2],why:r[3],c:cols[k%4],v:parseInt(String(r[2]).replace(/\D/g,""),10)||0}));
+      const tot=rows.reduce((a,b)=>a+b.v,0)||1, R=52, C=2*Math.PI*R; let off=0;
+      const segs=rows.map(r=>{const len=r.v/tot*C, el=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="${r.c}" stroke-width="20" stroke-dasharray="${len-2} ${C-len+2}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)" opacity=".9"/>`; off+=len; return el}).join("");
+      return `<div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap">
+        <svg viewBox="0 0 140 140" width="160" height="160" role="img" aria-label="Калории и время приёмов пищи">${segs}
+          <text x="70" y="66" font-size="19" font-weight="800" fill="var(--ink)" text-anchor="middle">${tot}</text>
           <text x="70" y="82" font-size="10" fill="var(--muted)" text-anchor="middle">ккал в день</text></svg>
-        <div style="display:grid;gap:6px;min-width:150px">${parts.map(([nm,v,c])=>`<div style="display:flex;align-items:center;gap:8px;font-size:13px"><i style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block"></i><span style="flex:1">${nm}</span><b>${v}</b></div>`).join("")}</div></div>`;})();
+        <div style="flex:1;min-width:260px;display:grid;gap:10px">${rows.map(r=>`
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <i style="width:12px;height:12px;border-radius:3px;background:${r.c};display:inline-block;margin-top:4px;flex:0 0 auto"></i>
+            <div style="flex:1">
+              <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+                <b style="font-size:14px">${esc(r.nm)}</b>
+                <span class="pill s-ok" style="background:var(--line);color:var(--ink);font-weight:600">${esc(r.time)}</span>
+                <b style="font-size:13px">${esc(r.kcal)}</b>
+              </div>
+              <div class="muted" style="font-size:12.5px;line-height:1.45">${esc(r.why)}</div>
+            </div>
+          </div>`).join("")}</div></div>`;})();
     // линия снижения веса с контрольной точкой
     const curve=(()=>{const pts=[];let w=85;for(let k=0;k<=20;k++){pts.push(w);w-=k<2?0.15:k<4?0.3:0.45}
       const W=300,H=110,x=k=>14+k*(W-28)/20,y=v=>H-22-(v-76)*((H-40)/(85-76));
@@ -4413,19 +4425,6 @@ function render(){
         <text x="${x(11).toFixed(1)}" y="${H-8}" font-size="8.5" fill="var(--muted)" text-anchor="middle">22.11 — анализы</text>
         <text x="14" y="${H-8}" font-size="8.5" fill="var(--muted)">сентябрь</text>
         <text x="286" y="${H-8}" font-size="8.5" fill="var(--muted)" text-anchor="end">январь</text>
-      </svg>`})();
-    // день по часам
-    const day=(()=>{const items=[[8,"Завтрак","500","var(--accent)"],[13,"Обед","700","var(--ok)"],[17,"Перекус","250","var(--warn)"],[22,"Ужин","550","var(--bad)"]];
-      const X=h=>14+(h-6)/19*272;
-      return `<svg viewBox="0 0 300 76" width="100%" height="92" role="img" aria-label="День по часам">
-        <line x1="14" y1="44" x2="286" y2="44" stroke="var(--line)" stroke-width="2"/>
-        ${[6,10,14,18,22,25].map(h=>`<text x="${X(h).toFixed(1)}" y="62" font-size="8.5" fill="var(--muted)" text-anchor="middle">${h>24?h-24:h}:00</text>`).join("")}
-        ${items.map(([h,nm,kc,c])=>`<circle cx="${X(h).toFixed(1)}" cy="44" r="6" fill="${c}"/>
-          <text x="${X(h).toFixed(1)}" y="26" font-size="9.5" font-weight="700" fill="var(--ink)" text-anchor="middle">${nm}</text>
-          <text x="${X(h).toFixed(1)}" y="37" font-size="8.5" fill="var(--muted)" text-anchor="middle">${kc}</text>`).join("")}
-        <line x1="${X(25).toFixed(1)}" y1="34" x2="${X(25).toFixed(1)}" y2="54" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="3 2"/>
-        <text x="${X(25).toFixed(1)}" y="26" font-size="9" fill="var(--muted)" text-anchor="middle">отбой</text>
-        <text x="${((X(22)+X(25))/2).toFixed(1)}" y="72" font-size="8.5" fill="var(--muted)" text-anchor="middle">3 часа</text>
       </svg>`})();
     const done=Math.max(0,Math.min(100,Math.round((85-85)/(85-78)*100)));
     m.innerHTML=!n?`<div class="card"><div class="empty">Раздел питания для этого человека пока не заполнен</div></div>`:`
@@ -4454,11 +4453,8 @@ function render(){
       ${bju}
       ${n.macro?T3(n.macro,"22%"):""}
 
-      ${H("🕐","Сколько на каждый приём")}
+      ${H("🕐","Сколько и когда есть","2000 ккал за четыре приёма")}
       ${ring}
-      ${n.meals?T3(n.meals,"22%"):""}
-      ${day}
-      <div class="muted" style="font-size:12.5px;margin-top:-6px">Ужин за 2–3 часа до сна: при отбое около часа ночи это примерно 22:00.</div>
 
       ${H("🧭","Три правила вместо подсчёта калорий")}
       ${n.rules?T2(n.rules,"42%"):""}
