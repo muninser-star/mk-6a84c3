@@ -3304,7 +3304,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="04.09 10:48";   // подставляется при публикации
+const BUILD="04.09 11:22";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3365,6 +3365,8 @@ function showPending(){
 function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
 // ── Замеры тела: локально + таблица «23_Замеры_тела» на Диске, чтобы сходилось между телефоном и компьютером
 const MEAS_SHEET="23_Замеры_тела", SHOP_SHEET="24_Покупки_отмечено";
+// адрес для чтения таблиц: отдельное веб-приложение с doGet. Пишем по-прежнему через RELAY
+const READ_RELAY="https://script.google.com/macros/s/AKfycbzOT_mhCbnnSV02ueVuowKJxwDJa5aifb7v6IF-gWyi9B1kBuytdduY-BevYn_KVSmE/exec";
 const nutLS=(k,def)=>{try{const v=JSON.parse(localStorage.getItem("nut_"+k));return v==null?def:v}catch(e){return def}};
 const nutSET=(k,v)=>{try{localStorage.setItem("nut_"+k,JSON.stringify(v))}catch(e){}};
 function nutMerge(list){
@@ -3446,6 +3448,7 @@ function nutShopPush(){
   },1200);
 }
 function nutBind(){
+  nutPull().then(ok=>{ if(ok) render() });   // замеры и галочки с других устройств
   const wa=document.getElementById("wAdd"), wi=document.getElementById("wIn"),
         fi=document.getElementById("fIn"), hi=document.getElementById("hIn");
   if(!wa||!wi||wa.dataset.on) return;
@@ -3469,10 +3472,11 @@ function nutBind(){
   [wi,fi,hi].forEach(el=>el&&el.addEventListener("keydown",e=>{if(e.key==="Enter")save()}));
 }
 // чтение через приёмник: работает без входа в Google, если в Apps Script добавлен doGet
-async function relayRead(sheet){
-  if(!RELAY) return null;
+async function relayRead(sheet,last){
+  const base=READ_RELAY||RELAY;
+  if(!base) return null;
   try{
-    const r=await fetch(RELAY+"?sheet="+encodeURIComponent(sheet)+"&last=1");
+    const r=await fetch(base+"?sheet="+encodeURIComponent(sheet)+(last===false?"":"&last=1"));
     const j=await r.json();
     return (j&&j.ok&&Array.isArray(j.rows))?j.rows:null;
   }catch(e){ return null }
@@ -3488,8 +3492,26 @@ async function nutPullShop(){
   localStorage.setItem("nut_shop_ts",ts);
   return true;
 }
+// замеры через приёмник: вся история, мержим с локальной
+async function nutPullMeas(){
+  const rows=await relayRead(MEAS_SHEET,false);
+  if(!rows) return false;
+  const num=x=>{const v=parseFloat(String(x||"").replace(",","."));return isFinite(v)?v:null};
+  const remote=rows.filter(r=>r[0]&&/^\d{4}-\d{2}-\d{2}/.test(String(r[0])))
+    .map(r=>({d:String(r[0]).slice(0,10),v:num(r[2]),fat:num(r[3]),water:num(r[4])}));
+  if(!remote.length) return false;
+  const before=JSON.stringify(nutLS("weight",[]));
+  const merged=nutMerge([...remote,...nutLS("weight",[])]);
+  nutSET("weight",merged);
+  return JSON.stringify(merged)!==before;
+}
 async function nutPull(force){
-  if(!gToken){ return await nutPullShop() }
+  if(!gToken){
+    if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 6e4) return false;
+    localStorage.setItem("nut_pull",Date.now());
+    const a=await nutPullShop(), b=await nutPullMeas();
+    return a||b;
+  }
   if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 3e5) return false;
   try{
     const l=await gapi(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=200`);
@@ -4777,7 +4799,7 @@ function render(){
     const sc=document.getElementById("shopClear");
     if(sc) sc.addEventListener("click",()=>{SET("shop",[]);nutShopPush();render()});
     // подтянуть замеры с других устройств
-    nutPull().then(ok=>{ if(ok&&tab==="nutr") render() });   // замеры и галочки покупок с других устройств
+
   }
   else if(tab==="anam"){
     const q=query.toLowerCase();
