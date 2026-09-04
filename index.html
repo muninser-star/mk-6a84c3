@@ -3304,7 +3304,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="04.09 09:59";   // подставляется при публикации
+const BUILD="04.09 10:48";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3364,7 +3364,7 @@ function showPending(){
 }
 function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
 // ── Замеры тела: локально + таблица «23_Замеры_тела» на Диске, чтобы сходилось между телефоном и компьютером
-const MEAS_SHEET="23_Замеры_тела";
+const MEAS_SHEET="23_Замеры_тела", SHOP_SHEET="24_Покупки_отмечено";
 const nutLS=(k,def)=>{try{const v=JSON.parse(localStorage.getItem("nut_"+k));return v==null?def:v}catch(e){return def}};
 const nutSET=(k,v)=>{try{localStorage.setItem("nut_"+k,JSON.stringify(v))}catch(e){}};
 function nutMerge(list){
@@ -3433,6 +3433,18 @@ function nutForm(){
     <div id="wMsg" class="muted" style="font-size:12px;margin-top:6px">${last?`последний: <b>${last.v} кг</b>${last.fat?` · жир ${last.fat} %`:""}${last.water?` · вода ${last.water} %`:""} · ${ru(last.d)}${
       F.length>1?` · с первого замера <b>${dd(last.v,first.v)} кг</b>`:""}`:"замеров пока нет — цифры сохранятся на всех устройствах"}</div>`;
 }
+let shopTimer=null;
+function nutShopPush(){
+  clearTimeout(shopTimer);
+  shopTimer=setTimeout(()=>{
+    const list=nutLS("shop",[]), now=new Date().toISOString();
+    localStorage.setItem("nut_shop_ts",Date.parse(now));
+    const row=[now,"Денис",list.join("; "),"медкнижка"];
+    Promise.race([sendRow(SHOP_SHEET,row,()=>{}),new Promise((_,r)=>setTimeout(()=>r(new Error("долго")),8000))])
+      .then(()=>{const e=document.getElementById("shopMsg"); if(e) e.innerHTML='<span style="color:var(--ok)">синхронизировано</span>'})
+      .catch(()=>{const e=document.getElementById("shopMsg"); if(e) e.innerHTML='<span class="muted">уйдёт при следующей синхронизации</span>'});
+  },1200);
+}
 function nutBind(){
   const wa=document.getElementById("wAdd"), wi=document.getElementById("wIn"),
         fi=document.getElementById("fIn"), hi=document.getElementById("hIn");
@@ -3456,8 +3468,28 @@ function nutBind(){
   wa.addEventListener("click",save);
   [wi,fi,hi].forEach(el=>el&&el.addEventListener("keydown",e=>{if(e.key==="Enter")save()}));
 }
+// чтение через приёмник: работает без входа в Google, если в Apps Script добавлен doGet
+async function relayRead(sheet){
+  if(!RELAY) return null;
+  try{
+    const r=await fetch(RELAY+"?sheet="+encodeURIComponent(sheet)+"&last=1");
+    const j=await r.json();
+    return (j&&j.ok&&Array.isArray(j.rows))?j.rows:null;
+  }catch(e){ return null }
+}
+// покупки: состояние берём из последней строки таблицы, если она новее локальной
+async function nutPullShop(){
+  const rows=await relayRead(SHOP_SHEET);
+  if(!rows||!rows.length) return false;
+  const last=rows[rows.length-1];
+  const ts=Date.parse(last[0])||0, mine=+localStorage.getItem("nut_shop_ts")||0;
+  if(ts<=mine) return false;
+  nutSET("shop",String(last[2]||"").split(";").map(x=>x.trim()).filter(Boolean));
+  localStorage.setItem("nut_shop_ts",ts);
+  return true;
+}
 async function nutPull(force){
-  if(!gToken) return false;
+  if(!gToken){ return await nutPullShop() }
   if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 3e5) return false;
   try{
     const l=await gapi(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${G_FOLDER}' in parents and trashed=false`)}&fields=files(id,name)&pageSize=200`);
@@ -3470,6 +3502,20 @@ async function nutPull(force){
       .map(x=>({d:x[0].trim(),v:num(x[2]),fat:num(x[3]),water:num(x[4])}));
     const merged=nutMerge([...remote,...nutLS("weight",[])]);
     nutSET("weight",merged);
+    // список покупок: берём последнюю по времени запись и сравниваем с локальной
+    const fs=(l.files||[]).find(x=>x.name===SHOP_SHEET);
+    if(fs){
+      const rs=await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${fs.id}/values/A1:D5000`);
+      const rows=(rs.values||[]).slice(1).filter(x=>x[0]);
+      if(rows.length){
+        const last=rows[rows.length-1];
+        const ts=Date.parse(last[0])||0, mine=+localStorage.getItem("nut_shop_ts")||0;
+        if(ts>mine){
+          nutSET("shop",String(last[2]||"").split(";").map(x=>x.trim()).filter(Boolean));
+          localStorage.setItem("nut_shop_ts",ts);
+        }
+      }
+    }
     localStorage.setItem("nut_pull",Date.now());
     return true;
   }catch(e){ return false }
@@ -4621,9 +4667,9 @@ function render(){
 
       ${H("🛒","Список покупок на неделю","галочки сохраняются в этом браузере")}
       ${n.shop?`<div class="shop-grid">${n.shop.map((col,ci)=>`<div class="shop-col"><h4>${esc(col[0])}</h4>
-        ${col.slice(1).map((it,ii)=>{const id=ci+"_"+ii, on=shopDone.includes(id);
-          return `<label class="chk ${on?"done":""}" data-shop="${id}"><input type="checkbox" ${on?"checked":""}><span>${esc(it)}</span></label>`}).join("")}
-      </div>`).join("")}<div style="align-self:end"><button class="wbox-clear" id="shopClear" style="padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--muted);cursor:pointer;font-size:13px">Снять все галочки</button></div></div>`:""}
+        ${col.slice(1).map(it=>{const on=shopDone.includes(it);
+          return `<label class="chk ${on?"done":""}" data-shop="${esc(it)}"><input type="checkbox" ${on?"checked":""}><span>${esc(it)}</span></label>`}).join("")}
+      </div>`).join("")}<div style="align-self:end"><div id="shopMsg" class="muted" style="font-size:12px;margin-bottom:6px">галочки видны на всех устройствах</div><button class="wbox-clear" id="shopClear" style="padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--muted);cursor:pointer;font-size:13px">Снять все галочки</button></div></div>`:""}
 
       <details class="nut-acc"><summary>📐 Расчёт: откуда взялись 2000 ккал</summary>
       ${n.calc?T3(n.calc,"26%"):""}      </details>
@@ -4720,6 +4766,8 @@ function render(){
       const id=el.dataset.shop, cur=LS("shop",[]);
       const nx=el.querySelector("input").checked?[...new Set([...cur,id])]:cur.filter(x=>x!==id);
       SET("shop",nx); el.classList.toggle("done",el.querySelector("input").checked);
+      const msg=document.getElementById("shopMsg"); if(msg) msg.innerHTML='<span class="muted">сохраняю…</span>';
+      nutShopPush();
     }));
     m.querySelectorAll("[data-week]").forEach(el=>el.addEventListener("change",()=>{
       const k=+el.dataset.week, cur=LS("week",[]);
@@ -4727,9 +4775,9 @@ function render(){
       SET("week",nx); el.classList.toggle("done",el.querySelector("input").checked);
     }));
     const sc=document.getElementById("shopClear");
-    if(sc) sc.addEventListener("click",()=>{SET("shop",[]);render()});
+    if(sc) sc.addEventListener("click",()=>{SET("shop",[]);nutShopPush();render()});
     // подтянуть замеры с других устройств
-    nutPull().then(ok=>{ if(ok&&tab==="nutr") render() });
+    nutPull().then(ok=>{ if(ok&&tab==="nutr") render() });   // замеры и галочки покупок с других устройств
   }
   else if(tab==="anam"){
     const q=query.toLowerCase();
