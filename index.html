@@ -238,6 +238,36 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .lockbox input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:17px;text-align:center;letter-spacing:.25em}
 .lockbox button{width:100%;margin-top:9px;padding:11px;font-size:15px}
 #lockMsg{margin-top:9px;font-size:12.5px;min-height:16px}
+.tl{margin-top:4px}
+.tl-m{margin-bottom:22px}
+.tl-m>h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  border-bottom:1px solid var(--line);padding-bottom:6px}
+.tl-d{position:relative;padding-left:18px;margin-bottom:14px}
+.tl-d:before{content:"";position:absolute;left:4px;top:7px;bottom:-14px;width:1px;background:var(--line)}
+.tl-d:last-child:before{bottom:auto;height:10px}
+.tl-date{position:relative;font-size:13px;font-weight:700;margin-bottom:6px}
+.tl-date:before{content:"";position:absolute;left:-18px;top:5px;width:9px;height:9px;border-radius:50%;
+  background:var(--card);border:2px solid var(--muted)}
+.tl-e{padding:7px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;background:var(--card)}
+.tl-e.click{cursor:pointer}
+.tl-e.click:hover{border-color:var(--ink)}
+.tl-h{display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;font-size:14px}
+.tl-i{font-size:15px}
+.tl-k{font-size:11.5px}
+.tl-l{margin:5px 0 0 23px;font-size:13px;line-height:1.5}
+.tl-l>div{color:var(--muted)}
+.tl-l b{color:var(--ink)}
+.ins-c{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ins-p{font-size:13px;padding:5px 11px;border-radius:20px;border:1px solid var(--line)}
+.ins-top{display:flex;flex-direction:column;gap:8px}
+.ins-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
+  padding:8px 10px;border:1px solid var(--line);border-radius:9px}
+.ins-row .muted{font-size:11.5px}
+.ins-v{font-size:13.5px;white-space:nowrap}
+.ins-d{font-size:14px;font-weight:700;white-space:nowrap;min-width:56px;text-align:right}
+.ins-d.s-ok{color:var(--ok)}.ins-d.s-warn{color:var(--warn)}.ins-d.s-bad{color:var(--bad)}
+.ins-g{margin:0;padding-left:18px;font-size:13.5px;line-height:1.65}
+@media(max-width:560px){.ins-row{grid-template-columns:1fr auto}.ins-d{grid-column:2}}
 .phead{margin:0 0 14px;padding:0 2px}
 .phead h2{margin:0 0 3px;font-size:21px;line-height:1.2}
 .phead .muted{font-size:13px}
@@ -2899,6 +2929,146 @@ const TABS=[["home","Обзор"],["nutr","Питание"],["all","Всё"],["v
 
 function idOf(r){return DATA[cur].rec.indexOf(r)}
 
+// ── Таймлайн: месяц → день → события. Записи, симптомы и старты препаратов в одной ленте
+const TL_ICON={visit:"👨‍⚕️",lab:"🧪",instr:"🩻",sym:"🤒",med:"💊"};
+const TL_KIND={visit:"приём",lab:"анализ",instr:"исследование",sym:"симптом",med:"препарат"};
+const MONTHS=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+const MONTHS1=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+function monthKey(d){ return String(d).slice(0,7) }
+function monthName(k){ const [y,m]=k.split("-"); return MONTHS1[+m-1]+" "+y }
+function dayName(d){ const x=new Date(d); return `${String(x.getDate()).padStart(2,"0")} ${MONTHS[x.getMonth()]} ${x.getFullYear()}` }
+// строки «→ …» под событием: для анализа значение и норма, для приёма первые пункты протокола
+function tlLines(e){
+  const r=e.r;
+  if(e.k==="lab"){
+    const out=[];
+    if(r.v){ const mk=markVN(r.v,r.n);
+      out.push(`<b${mk?` style="color:${mk.c}"`:""}>${esc(r.v)}</b>${r.n?` <span class="muted">· норма ${esc(r.n)}</span>`:""}`) }
+    const was=(r.full||[]).find(f=>/динамик|было/i.test(f[0]));
+    if(was) out.push(esc(String(was[1]).slice(0,110)));
+    if(!out.length&&r.res) out.push(esc(String(r.res).slice(0,130)));
+    return out;
+  }
+  if(e.k==="sym") return [ (r.i!=null?`интенсивность ${r.i}`:"") + (r.m?`${r.i!=null?" · ":""}лечили: ${esc(r.m)}`:"") ].filter(Boolean)
+    .concat(r.f?[esc(String(r.f).slice(0,140))]:[]);
+  if(e.k==="med") return [esc(String(r.how||"").slice(0,140))].filter(Boolean);
+  const rows=(r.full||[]).filter(f=>f[1]).slice(0,3).map(f=>`<span class="muted">${esc(f[0])}:</span> ${esc(String(f[1]).slice(0,110))}`);
+  return rows.length?rows:(r.res?[esc(r.res)]:[]);
+}
+// дата начала препарата: берём первую дату, упомянутую в схеме приёма
+function medStart(m){
+  const x=String(m.how||"").match(/(\d{2})\.(\d{2})\.(\d{4})/);
+  return x?`${x[3]}-${x[2]}-${x[1]}`:null;
+}
+function tlEvents(d){
+  const out=[];
+  (d.rec||[]).filter(matches).forEach(r=>out.push({d:r.d,k:r.t,t:r.title,sys:r.sys,st:r.st,r,id:idOf(r)}));
+  ((d.sym||{}).log||[]).forEach(r=>{ if(!query||matches({title:r.n,res:r.f||"",d:r.d}))
+    out.push({d:r.d,k:"sym",t:r.n,sys:r.sys,st:r.i>=5?"warn":"",r}) });
+  (d.meds||[]).forEach(m=>{ const dd=medStart(m); if(dd&&(!query||matches({title:m.n,res:m.why||"",d:dd})))
+    out.push({d:dd,k:"med",t:"Начат приём: "+m.n,sys:null,st:"",r:m}) });
+  return out.sort((a,b)=>b.d.localeCompare(a.d)||a.k.localeCompare(b.k));
+}
+function timeline(d){
+  const ev=tlEvents(d);
+  if(!ev.length) return `<div class="empty">Ничего не найдено</div>`;
+  const byMonth={}; ev.forEach(e=>(byMonth[monthKey(e.d)]=byMonth[monthKey(e.d)]||[]).push(e));
+  const months=Object.keys(byMonth).sort().reverse();
+  return `<div class="tl">${months.map(mk=>{
+    const byDay={}; byMonth[mk].forEach(e=>(byDay[e.d]=byDay[e.d]||[]).push(e));
+    const days=Object.keys(byDay).sort().reverse();
+    return `<div class="tl-m"><h3>${esc(monthName(mk))}<span class="muted"> · ${byMonth[mk].length}</span></h3>
+      ${days.map(dd=>`<div class="tl-d"><div class="tl-date">${esc(dayName(dd))}</div>
+        ${byDay[dd].map(e=>{
+          const lines=tlLines(e);
+          return `<div class="tl-e${e.id?" click":""}"${e.id?` data-rec="${e.id}"`:""}>
+            <div class="tl-h"><span class="tl-i">${TL_ICON[e.k]||"•"}</span>
+              <b>${hl(e.t)}</b>
+              ${e.st?`<span class="pill s-${e.st}">${ST[e.st]}</span>`:""}
+              <span class="muted tl-k">${TL_KIND[e.k]||""}${e.sys?" · "+esc(sysName(e.sys)):""}</span></div>
+            ${lines.length?`<div class="tl-l">${lines.map(x=>`<div>→ ${x}</div>`).join("")}</div>`:""}
+          </div>`}).join("")}
+      </div>`).join("")}</div>`}).join("")}</div>`;
+}
+// ── Автоматические выводы. Считаются из рядов и записей, ничего не утверждают про причины
+function monthsAgo(d){ return (Date.now()-Date.parse(d))/2592e6 }
+function inNorm(s,v){
+  if(!s.norm) return null;
+  const [lo,hi]=s.norm;
+  if(lo!=null&&v<lo) return false;
+  if(hi!=null&&v>hi) return false;
+  return true;
+}
+function changed(d,months){
+  const out=[];
+  (d.series||[]).forEach(x=>{
+    const pts=(x.pts||[]).map(p=>({d:serDate(p[0]),v:p[1]})).filter(p=>p.d).sort((a,b)=>a.d<b.d?-1:1);
+    if(pts.length<2) return;
+    const win=pts.filter(p=>monthsAgo(p.d)<=months);
+    const a=win.length>=2?win[0]:pts[pts.length-2], b=pts[pts.length-1];
+    if(!a||!b||a===b||!a.v||!b.v) return;
+    const dp=(b.v-a.v)/Math.abs(a.v)*100;
+    const bad=inNorm(x,b.v)===false;
+    out.push({n:x.name,u:x.unit,a:a.v,b:b.v,da:a.d,db:b.d,dp,bad,
+              cls: bad?"bad" : Math.abs(dp)>=10?"warn":"ok"});
+  });
+  return out.sort((p,q)=>Math.abs(q.dp)-Math.abs(p.dp));
+}
+function serDate(x){                     // в рядах даты лежат как ДД.ММ.ГГГГ
+  const m=String(x).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  return m?`${m[3]}-${m[2]}-${m[1]}`:(/^\d{4}-\d{2}-\d{2}$/.test(x)?x:null);
+}
+function nz1(v){ return String(Math.round(v*100)/100).replace(".",",") }
+function insightsChanged(d){
+  const M=6, list=changed(d,M);
+  if(!list.length) return "";
+  const ok=list.filter(x=>x.cls==="ok").length, wa=list.filter(x=>x.cls==="warn").length, bd=list.filter(x=>x.cls==="bad").length;
+  const top=list.filter(x=>Math.abs(x.dp)>=5).slice(0,3);
+  return `<div class="card"><h2>🔎 Что изменилось</h2>
+    <div class="muted" style="margin:-6px 0 10px">За последние ${M} месяцев, по рядам динамики. Считает страница, врач это не смотрел.</div>
+    <div class="ins-c">
+      <span class="ins-p s-ok">🟢 ${ok} стабильно</span>
+      <span class="ins-p s-warn">🟡 ${wa} изменилось</span>
+      <span class="ins-p s-bad">🔴 ${bd} вне нормы</span>
+    </div>
+    ${top.length?`<div class="ins-top">${top.map(x=>`<div class="ins-row">
+      <div><b>${esc(x.n)}</b><div class="muted">${ru(x.da)} → ${ru(x.db)}</div></div>
+      <div class="ins-v">${nz1(x.a)} → <b>${nz1(x.b)}</b> <span class="muted">${esc(x.u||"")}</span></div>
+      <div class="ins-d s-${x.cls}">${x.dp>0?"+":"−"}${Math.abs(Math.round(x.dp))} %</div>
+    </div>`).join("")}</div>`:""}</div>`;
+}
+function insightsGaps(d){
+  const g=[];
+  const rec=(d.rec||[]).slice().sort((a,b)=>b.d.localeCompare(a.d));
+  const lastLab=rec.find(r=>r.t==="lab");
+  if(lastLab){
+    const m=Math.round(monthsAgo(lastLab.d));
+    if(m>=10) g.push(`Последний анализ был <b>${m} мес. назад</b> — ${ru(lastLab.d)}.`);
+  }
+  // показатели, которые перестали появляться: последняя точка ряда старше года
+  (d.series||[]).forEach(x=>{
+    const pts=(x.pts||[]).map(p=>serDate(p[0])).filter(Boolean).sort();
+    const last=pts[pts.length-1];
+    if(last && monthsAgo(last)>=12) g.push(`<b>${esc(x.name)}</b> не измерялся с ${ru(last)} — ${Math.round(monthsAgo(last))} мес.`);
+  });
+  // показатели, которые были в прошлом заборе, но не пришли в последнем
+  const draws={};
+  (d.rec||[]).filter(r=>r.t==="lab").forEach(r=>{ (draws[r.d]=draws[r.d]||[]).push(r.title) });
+  // сравниваем два последних БОЛЬШИХ забора: разовая пересдача одного показателя тут ни при чём
+  const big=Object.keys(draws).filter(k=>draws[k].length>=5).sort().reverse();
+  if(big.length>=2){
+    const cur=new Set(draws[big[0]]);
+    const miss=draws[big[1]].filter(t=>!cur.has(t));
+    if(miss.length) g.push(`В заборе ${ru(big[0])} нет ${miss.length} показателей, которые были ${ru(big[1])}: <b>${esc(miss.slice(0,4).join(", "))}</b>${miss.length>4?" и др.":""}`);
+  }
+  // открытые вопросы, которые сам же файл считает недостающими
+  ((d.attention||[]).filter(a=>a.st==="bad")).slice(0,3).forEach(a=>
+    g.push(`${esc(a.t)}${a.d?` <span class="muted">— ${esc(a.d)}</span>`:""}`));
+  if(!g.length) return "";
+  return `<div class="card"><h2>📌 Что стоит проверить</h2>
+    <div class="muted" style="margin:-6px 0 10px">Пробелы в данных, а не диагнозы. Список собирается сам.</div>
+    <ul class="ins-g">${g.slice(0,8).map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+}
 function tableRows(list,opt){
   opt=opt||{};
   if(!list.length)return `<div class="empty">${opt.empty||"Ничего не найдено"}</div>`;
@@ -3528,7 +3698,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="06.09 23:25";   // подставляется при публикации
+const BUILD="06.09 23:38";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -5439,10 +5609,11 @@ function render(){
         </tbody></table></div></div>`:""}
       ${S.nev.length?`<div class="card" id="s-nev"><h2>Никогда не сдавалось — ${S.nev.length}</h2>
         <div>${S.nev.map(n=>`<span class="tag" style="font-size:13px;padding:4px 10px">${hl(n)}</span>`).join(" ")}</div></div>`:""}`:""}
+      ${tab==="all"&&!query&&!sysFilter?insightsChanged(d)+insightsGaps(d):""}
       <div class="card" id="s-rec">
-        <h2>${query?"Записи":TABS.find(t=>t[0]===tab)[1]}${sysFilter?" · "+esc(sysName(sysFilter)):""} <span class="muted" style="text-transform:none">— ${list.length}</span></h2>
+        <h2>${tab==="all"?"Медицинская история":(query?"Записи":TABS.find(t=>t[0]===tab)[1])}${sysFilter?" · "+esc(sysName(sysFilter)):""} <span class="muted" style="text-transform:none">— ${list.length}</span></h2>
         ${filterBar()}
-        ${tableRows(list,{showType:tab==="all"})}
+        ${tab==="all"&&!sysFilter?timeline(d):tableRows(list,{showType:tab==="all"})}
         ${(!list.length&&sysFilter&&other)?`<div style="text-align:center;margin-top:10px">
           <button class="gobtn" style="max-width:320px" data-sys="${sysFilter}">Показать все ${other} записей системы →</button></div>`:""}
       </div>
