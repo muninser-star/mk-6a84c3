@@ -231,6 +231,14 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .shop-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .shop-col{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
 .shop-col h4{margin:0 0 4px;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.chkgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px}
+.chkbox{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer;transition:border-color .15s}
+.chkbox:hover{border-color:var(--ink)}
+.chkbox input{margin-top:2px;width:17px;height:17px;flex:none;accent-color:var(--ok)}
+.chkbox span{display:flex;flex-direction:column;gap:1px;line-height:1.25}
+.chkbox b{font-size:13.5px;font-weight:600}
+.chkbox i{font-style:normal;font-size:11.5px;color:var(--muted)}
+.chkbox:has(input:checked){border-color:var(--ok);background:color-mix(in srgb,var(--ok) 7%,transparent)}
 .wbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .wbox input{width:100px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:14px}
 .wbox button{padding:7px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13.5px}
@@ -3463,7 +3471,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="06.09 22:24";   // подставляется при публикации
+const BUILD="06.09 22:53";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3523,7 +3531,9 @@ function showPending(){
 }
 function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
 // ── Замеры тела: локально + таблица «23_Замеры_тела» на Диске, чтобы сходилось между телефоном и компьютером
-const MEAS_SHEET="23_Замеры_тела", SHOP_SHEET="24_Покупки_отмечено";
+const MEAS_SHEET="23_Замеры_тела", SHOP_SHEET="24_Покупки_отмечено", CHK_SHEET="25_Чекин";
+// четыре ежедневных действия. Метрики — следствие, управляем действиями
+const CHK_ACTS=[["up","Подъём 07:30","задаёт регулярность сна"],["walk","30 мин быстрой ходьбы","шаги, активные калории, аэробная норма"],["prot","Белок в завтрак 30 г","главный провал по БЖУ"],["diary","Записал еду","без этого контур слепой"]];
 // адрес для чтения таблиц: отдельное веб-приложение с doGet. Пишем по-прежнему через RELAY
 const READ_RELAY="https://script.google.com/macros/s/AKfycbzOT_mhCbnnSV02ueVuowKJxwDJa5aifb7v6IF-gWyi9B1kBuytdduY-BevYn_KVSmE/exec";
 const nutLS=(k,def)=>{try{const v=JSON.parse(localStorage.getItem("nut_"+k));return v==null?def:v}catch(e){return def}};
@@ -3581,6 +3591,69 @@ function nutChart(){
   </svg>`;
 }
 // форма замера — одна на все экраны
+function chkDay(d){ const all=nutLS("chk",{}); return all[d]||{} }
+function chkWeekDays(){                       // последние 7 дней, сегодня последний
+  const out=[], t=new Date();
+  for(let i=6;i>=0;i--){ const x=new Date(t); x.setDate(t.getDate()-i); out.push(x.toISOString().slice(0,10)) }
+  return out;
+}
+function chkScore(){
+  const all=nutLS("chk",{}); let n=0;
+  chkWeekDays().forEach(d=>{ const v=all[d]||{}; CHK_ACTS.forEach(a=>{ if(v[a[0]]) n++ }) });
+  return n;
+}
+function chkForm(){
+  const today=new Date().toISOString().slice(0,10), v=chkDay(today);
+  const n=chkScore(), pct=Math.round(n/28*100);
+  const col=n>=24?"ok":n>=20?"warn":"bad";
+  const days=chkWeekDays(), all=nutLS("chk",{});
+  const strip=days.map(d=>{
+    const k=Object.keys(all[d]||{}).filter(x=>all[d][x]).length;
+    const c=k===4?"var(--ok)":k>=2?"var(--warn)":k>0?"var(--bad)":"var(--line)";
+    return `<span title="${ru(d)} — ${k} из 4" style="flex:1;height:8px;border-radius:2px;background:${c}"></span>`;
+  }).join("");
+  return `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Чек-ин дня — четыре действия</div>
+    <div class="chkgrid">${CHK_ACTS.map(a=>`<label class="chkbox"><input type="checkbox" data-act="${a[0]}"${v[a[0]]?" checked":""}><span><b>${esc(a[1])}</b><i>${esc(a[2])}</i></span></label>`).join("")}</div>
+    <div style="display:flex;gap:3px;margin-top:10px">${strip}</div>
+    <div id="chkMsg" class="muted" style="font-size:12px;margin-top:6px">Исполнение за 7 дней: <b style="color:var(--${col})">${n} из 28</b> · ${pct} % · цель 24</div>`;
+}
+let chkTimer=null;
+function chkPush(){
+  clearTimeout(chkTimer);
+  chkTimer=setTimeout(()=>{
+    const d=new Date().toISOString().slice(0,10), v=chkDay(d);
+    const row=[d,"Денис",v.up?1:0,v.walk?1:0,v.prot?1:0,v.diary?1:0,"медкнижка"];
+    Promise.race([sendRow(CHK_SHEET,row,()=>{}),new Promise((_,r)=>setTimeout(()=>r(new Error("долго")),8000))])
+      .then(()=>{const e=document.getElementById("chkMsg"); if(e) e.innerHTML+=' · <span style="color:var(--ok)">в таблице</span>'})
+      .catch(()=>{const e=document.getElementById("chkMsg"); if(e) e.innerHTML+=' · <span class="muted">уйдёт при синхронизации</span>'});
+  },1000);
+}
+function chkBind(){
+  document.querySelectorAll('input[data-act]').forEach(el=>{
+    if(el.dataset.on) return; el.dataset.on="1";
+    el.addEventListener("change",()=>{
+      const d=new Date().toISOString().slice(0,10), all=nutLS("chk",{});
+      all[d]=Object.assign({},all[d]||{},{[el.dataset.act]:el.checked?1:0});
+      nutSET("chk",all); nutSET("chk_ts",Date.now());
+      chkPush(); render();
+    });
+  });
+}
+// чек-ин с других устройств: по строке на дату, последняя запись за дату побеждает
+async function nutPullChk(){
+  const rows=await relayRead(CHK_SHEET,false,6000);
+  if(!rows||!rows.length) return false;
+  const all=Object.assign({},nutLS("chk",{}));
+  let changed=false;
+  rows.slice(1).forEach(r=>{
+    const d=String(r[0]||"").slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    const v={up:+r[2]?1:0,walk:+r[3]?1:0,prot:+r[4]?1:0,diary:+r[5]?1:0};
+    if(JSON.stringify(all[d]||{})!==JSON.stringify(v)){ all[d]=v; changed=true }
+  });
+  if(changed){ nutSET("chk",all); localStorage.setItem("nut_sync_at",Date.now()) }
+  return changed;
+}
 function nutForm(){
   const F=nutLS("weight",[]), last=F[F.length-1], first=F[0];
   const dd=(a,b)=>a!=null&&b!=null?(a-b).toFixed(1):null;
@@ -3680,13 +3753,14 @@ async function nutPull(force){
   if(!gToken){
     if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 2e4) return false;
     localStorage.setItem("nut_pull",Date.now());
-    const [a,b]=await Promise.all([
+    const [a,b,c]=await Promise.all([
       nutPullShop().catch(()=>false),
-      nutPullMeas().catch(()=>false)
+      nutPullMeas().catch(()=>false),
+      nutPullChk().catch(()=>false)
     ]);
     // пришло что-то новое — перерисовать сразу, не дожидаясь вызывающего
-    if((a||b) && !window.__nutRedraw){ window.__nutRedraw=1; setTimeout(()=>{window.__nutRedraw=0; render()},0) }
-    return a||b;
+    if((a||b||c) && !window.__nutRedraw){ window.__nutRedraw=1; setTimeout(()=>{window.__nutRedraw=0; render()},0) }
+    return a||b||c;
   }
   if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 3e5) return false;
   try{
@@ -4416,6 +4490,8 @@ function render(){
     </div>
 
     ${d.nutrition?`<div class="card" style="padding:13px 16px">
+      ${chkForm()}
+      <div style="margin:12px 0;border-top:1px solid var(--line)"></div>
       ${nutForm()}
       <div style="margin-top:12px">${nutChart()}</div>
     </div>`:""}
@@ -5244,6 +5320,7 @@ function render(){
       </div>`:""}`;
   }
   nutBind();
+  chkBind();
 }
 
 // ── События
