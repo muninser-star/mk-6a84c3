@@ -231,14 +231,35 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .shop-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .shop-col{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
 .shop-col h4{margin:0 0 4px;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.chkgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px}
-.chkbox{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer;transition:border-color .15s}
-.chkbox:hover{border-color:var(--ink)}
-.chkbox input{margin-top:2px;width:17px;height:17px;flex:none;accent-color:var(--ok)}
-.chkbox span{display:flex;flex-direction:column;gap:1px;line-height:1.25}
-.chkbox b{font-size:13.5px;font-weight:600}
-.chkbox i{font-style:normal;font-size:11.5px;color:var(--muted)}
-.chkbox:has(input:checked){border-color:var(--ok);background:color-mix(in srgb,var(--ok) 7%,transparent)}
+#lock{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+#lock.off{display:none}
+.lockbox{width:100%;max-width:320px;text-align:center}
+.lockico{font-size:38px;margin-bottom:10px}
+.lockbox h2{margin:0 0 4px;font-size:19px}
+.lockbox p{margin:0 0 16px;font-size:13px}
+.lockbox input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:17px;text-align:center;letter-spacing:.25em}
+.lockbox button{width:100%;margin-top:9px;padding:11px;font-size:15px}
+#lockMsg{margin-top:9px;font-size:12.5px;min-height:16px}
+body.locked>header,body.locked>nav,body.locked>main{display:none}
+.proghead{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.progring{width:118px;height:118px;flex:none}
+.progrank{flex:1;min-width:180px}
+.progrank .rk{font-size:17px;font-weight:700;margin-bottom:3px}
+.streak{display:inline-block;margin-top:7px;font-size:12px;padding:3px 9px;border-radius:20px;background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.progbars{display:flex;flex-direction:column;gap:9px}
+.progrow{display:grid;grid-template-columns:minmax(120px,1.15fr) minmax(70px,1.6fr) minmax(96px,auto);gap:10px;align-items:center}
+.progrow .pl{display:flex;flex-direction:column;line-height:1.2}
+.progrow .pl b{font-size:13px;font-weight:600}
+.progrow .pl i{font-style:normal;font-size:11px;color:var(--muted)}
+.pbar{height:9px;border-radius:6px;background:var(--line);overflow:hidden}
+.pbar span{display:block;height:100%;border-radius:6px;transition:width .5s}
+.progrow .pv{font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.progrow .pv small{font-weight:400;color:var(--muted)}
+.progrow .pv em{font-style:normal;margin-left:4px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+.bdg{font-size:12px;padding:4px 10px;border-radius:20px;border:1px dashed var(--line);color:var(--muted)}
+.bdg.on{border-style:solid;border-color:var(--ok);color:var(--ink);background:color-mix(in srgb,var(--ok) 10%,transparent)}
+@media(max-width:560px){.progrow{grid-template-columns:1fr auto}.progrow .pbar{grid-column:1/-1;order:3}}
 .wbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .wbox input{width:100px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:14px}
 .wbox button{padding:7px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13.5px}
@@ -257,6 +278,15 @@ details.nut-acc[open]>summary::after{transform:rotate(90deg);display:inline-bloc
 </style>
 </head>
 <body>
+
+<div id="lock"><div class="lockbox">
+  <div class="lockico">🔒</div>
+  <h2>Медкнижка семьи</h2>
+  <p class="muted">Страница закрыта. Введите код — на этом устройстве он запомнится.</p>
+  <input id="lockIn" type="password" inputmode="numeric" autocomplete="current-password" placeholder="код">
+  <button id="lockGo">Открыть</button>
+  <div id="lockMsg" class="muted"></div>
+</div></div>
 
 <header>
   <h1>🩺 Медкнижка семьи</h1>
@@ -2024,6 +2054,32 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
       ["Пт","Ночная овсянка с ягодами и корицей + яйцо","Треска с картофелем (вчерашняя) + салат","Кефир + орехи 15 г","Индейка 200 г на сковороде + перловка + овощи гриль + аджика (острое — только в свою тарелку)"],
       ["Сб","Сырники без сахара 150 г + сметана","Плов с курицей и бурым рисом 350 г + салат из дайкона","Яблоко + творог 100 г","Стейк говядины 200 г + булгур + баклажанная икра"],
       ["Вс","🎉 Свободный завтрак","Свободный обед в пределах разумного","Фрукт + кефир","Тушёная фасоль с овощами 250 г + яйцо + сырный соус (его же ест Даня)"]],
+    prog:{
+      week:"30 авг – 5 сен",
+      updated:"2026-09-06",
+      note:"Считается по недельному разбору: вес берётся из замеров сам, остальное обновляется по дневнику и скриншотам трекера.",
+      streak:"1 неделя с полным разбором",
+      items:[
+        {n:"Вес",hint:"от 85,4 к цели 78",live:"weight",v:85.2,base:85.4,goal:78,u:"кг",lo:1,prev:85.4},
+        {n:"Белок в день",hint:"главный провал по БЖУ",v:109,base:86,goal:140,u:"г",prev:86},
+        {n:"Калории в день",hint:"недобор третью неделю",v:2115,base:1560,goal:2300,u:"ккал",prev:1880},
+        {n:"Шаги в день",hint:"среднее за неделю",v:9121,base:7194,goal:10000,u:"",prev:9456},
+        {n:"Активные калории",hint:"среднее за неделю",v:444,base:345,goal:500,u:"ккал",prev:345},
+        {n:"Регулярность сна",hint:"балл трекера, норма от 70",v:64,base:56,goal:70,u:"",prev:56},
+        {n:"Засыпание",hint:"минут после полуночи",v:46,base:115,goal:0,u:"мин",lo:1,prev:115}
+      ],
+      badges:[
+        {i:"🚀",n:"Старт",got:1,d:"03.09.2026 — план начат, первый замер"},
+        {i:"🔬",n:"База собрана",got:1,d:"06.09.2026 — сон, шаги, движения, вставания оцифрованы"},
+        {i:"📓",n:"Дневник",got:1,d:"04.09.2026 — дневник питания заведён и ведётся"},
+        {i:"🥇",n:"Первый килограмм",got:0,how:"вес 84,4 — минус 1 кг от старта"},
+        {i:"🌙",n:"Полночь",got:0,how:"среднее засыпание раньше 00:00"},
+        {i:"🍗",n:"Белковая неделя",got:0,how:"средний белок 130 г и выше"},
+        {i:"👟",n:"Десять тысяч",got:0,how:"10 000 шагов в среднем за неделю"},
+        {i:"🧂",n:"Чистая соль",got:0,how:"семь дней подряд не выше 5 г соли"},
+        {i:"❤️",n:"Серия давления",got:0,how:"семь замеров подряд без пропусков"}
+      ]
+    },
     menuWhy:"Пересобрано 06.09.2026 по факту первых дней дневника. Три правки, каждая под конкретный провал. Первое: у каждого белкового блюда теперь стоит вес — ужины проседали именно на порции, 125 г мяса вместо 200 стоят 20 г белка и 160 ккал. Второе: гарнир появился и в обед, и в ужин — углеводы четыре дня подряд шли около 170 при норме 265, и добирались они вечером печеньем. Третье: орехи урезаны до 15 г, сыр остался только в субботнем салате — жиры три дня превышали норму и съедали бюджет, который должен был уйти на крупу.",
     fish:"Поправка по рыбе с учётом мочевой кислоты 439: основа — белая рыба (минтай, треска, хек), она дешёвая и низкопуриновая. Жирная рыба — раз в неделю, не чаще: пользы по омега-3 хватит, а пуринов она даёт заметно больше. Если жирная рыба не идёт, омега-3 добираются ложкой льняного масла в салат и горстью грецких орехов.",
     goal:"78 кг — минус 7 кг от нынешних 85. Темп 0,5 кг в неделю, около 3,5 месяцев. Быстрее нельзя: при жировой болезни печени резкое похудение ухудшает биохимию",
@@ -3471,7 +3527,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="06.09 22:53";   // подставляется при публикации
+const BUILD="06.09 23:05";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3531,9 +3587,7 @@ function showPending(){
 }
 function qLoad(){ try{ return JSON.parse(localStorage.getItem(QKEY)||"[]"); }catch(e){ return []; } }
 // ── Замеры тела: локально + таблица «23_Замеры_тела» на Диске, чтобы сходилось между телефоном и компьютером
-const MEAS_SHEET="23_Замеры_тела", SHOP_SHEET="24_Покупки_отмечено", CHK_SHEET="25_Чекин";
-// четыре ежедневных действия. Метрики — следствие, управляем действиями
-const CHK_ACTS=[["up","Подъём 07:30","задаёт регулярность сна"],["walk","30 мин быстрой ходьбы","шаги, активные калории, аэробная норма"],["prot","Белок в завтрак 30 г","главный провал по БЖУ"],["diary","Записал еду","без этого контур слепой"]];
+const MEAS_SHEET="23_Замеры_тела", SHOP_SHEET="24_Покупки_отмечено";
 // адрес для чтения таблиц: отдельное веб-приложение с doGet. Пишем по-прежнему через RELAY
 const READ_RELAY="https://script.google.com/macros/s/AKfycbzOT_mhCbnnSV02ueVuowKJxwDJa5aifb7v6IF-gWyi9B1kBuytdduY-BevYn_KVSmE/exec";
 const nutLS=(k,def)=>{try{const v=JSON.parse(localStorage.getItem("nut_"+k));return v==null?def:v}catch(e){return def}};
@@ -3591,68 +3645,59 @@ function nutChart(){
   </svg>`;
 }
 // форма замера — одна на все экраны
-function chkDay(d){ const all=nutLS("chk",{}); return all[d]||{} }
-function chkWeekDays(){                       // последние 7 дней, сегодня последний
-  const out=[], t=new Date();
-  for(let i=6;i>=0;i--){ const x=new Date(t); x.setDate(t.getDate()-i); out.push(x.toISOString().slice(0,10)) }
-  return out;
-}
-function chkScore(){
-  const all=nutLS("chk",{}); let n=0;
-  chkWeekDays().forEach(d=>{ const v=all[d]||{}; CHK_ACTS.forEach(a=>{ if(v[a[0]]) n++ }) });
-  return n;
-}
-function chkForm(){
-  const today=new Date().toISOString().slice(0,10), v=chkDay(today);
-  const n=chkScore(), pct=Math.round(n/28*100);
-  const col=n>=24?"ok":n>=20?"warn":"bad";
-  const days=chkWeekDays(), all=nutLS("chk",{});
-  const strip=days.map(d=>{
-    const k=Object.keys(all[d]||{}).filter(x=>all[d][x]).length;
-    const c=k===4?"var(--ok)":k>=2?"var(--warn)":k>0?"var(--bad)":"var(--line)";
-    return `<span title="${ru(d)} — ${k} из 4" style="flex:1;height:8px;border-radius:2px;background:${c}"></span>`;
-  }).join("");
-  return `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Чек-ин дня — четыре действия</div>
-    <div class="chkgrid">${CHK_ACTS.map(a=>`<label class="chkbox"><input type="checkbox" data-act="${a[0]}"${v[a[0]]?" checked":""}><span><b>${esc(a[1])}</b><i>${esc(a[2])}</i></span></label>`).join("")}</div>
-    <div style="display:flex;gap:3px;margin-top:10px">${strip}</div>
-    <div id="chkMsg" class="muted" style="font-size:12px;margin-top:6px">Исполнение за 7 дней: <b style="color:var(--${col})">${n} из 28</b> · ${pct} % · цель 24</div>`;
-}
-let chkTimer=null;
-function chkPush(){
-  clearTimeout(chkTimer);
-  chkTimer=setTimeout(()=>{
-    const d=new Date().toISOString().slice(0,10), v=chkDay(d);
-    const row=[d,"Денис",v.up?1:0,v.walk?1:0,v.prot?1:0,v.diary?1:0,"медкнижка"];
-    Promise.race([sendRow(CHK_SHEET,row,()=>{}),new Promise((_,r)=>setTimeout(()=>r(new Error("долго")),8000))])
-      .then(()=>{const e=document.getElementById("chkMsg"); if(e) e.innerHTML+=' · <span style="color:var(--ok)">в таблице</span>'})
-      .catch(()=>{const e=document.getElementById("chkMsg"); if(e) e.innerHTML+=' · <span class="muted">уйдёт при синхронизации</span>'});
-  },1000);
-}
-function chkBind(){
-  document.querySelectorAll('input[data-act]').forEach(el=>{
-    if(el.dataset.on) return; el.dataset.on="1";
-    el.addEventListener("change",()=>{
-      const d=new Date().toISOString().slice(0,10), all=nutLS("chk",{});
-      all[d]=Object.assign({},all[d]||{},{[el.dataset.act]:el.checked?1:0});
-      nutSET("chk",all); nutSET("chk_ts",Date.now());
-      chkPush(); render();
-    });
+// ── Прогресс по метрикам. Значения обновляются при недельном разборе, вес — сам из замеров
+function progItems(d){
+  const P=(d.nutrition&&d.nutrition.prog)||null;
+  if(!P) return [];
+  const F=nutLS("weight",[]), last=F[F.length-1];
+  return P.items.map(it=>{
+    const x=Object.assign({},it);
+    if(x.live==="weight" && last && last.v) x.v=last.v;      // вес всегда свежий
+    const span=x.base-x.goal;
+    let r = span===0 ? 1 : (x.base-x.v)/span;                 // работает в обе стороны
+    x.pct=Math.max(0,Math.min(1,r));
+    return x;
   });
 }
-// чек-ин с других устройств: по строке на дату, последняя запись за дату побеждает
-async function nutPullChk(){
-  const rows=await relayRead(CHK_SHEET,false,6000);
-  if(!rows||!rows.length) return false;
-  const all=Object.assign({},nutLS("chk",{}));
-  let changed=false;
-  rows.slice(1).forEach(r=>{
-    const d=String(r[0]||"").slice(0,10);
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
-    const v={up:+r[2]?1:0,walk:+r[3]?1:0,prot:+r[4]?1:0,diary:+r[5]?1:0};
-    if(JSON.stringify(all[d]||{})!==JSON.stringify(v)){ all[d]=v; changed=true }
-  });
-  if(changed){ nutSET("chk",all); localStorage.setItem("nut_sync_at",Date.now()) }
-  return changed;
+function progForm(d){
+  const items=progItems(d);
+  if(!items.length) return "";
+  const P=d.nutrition.prog;
+  const score=Math.round(items.reduce((a,x)=>a+x.pct,0)/items.length*100);
+  const rank = score>=80?["В целевом коридоре","ok"] : score>=60?["На графике","ok"] : score>=40?["Набираю ход","warn"] : ["Разгон","warn"];
+  const RAD=52, C=2*Math.PI*RAD, off=C*(1-score/100);
+  const got=(P.badges||[]).filter(b=>b.got), next=(P.badges||[]).filter(b=>!b.got);
+  return `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">Прогресс · неделя ${esc(P.week)}</div>
+  <div class="proghead">
+    <svg viewBox="0 0 130 130" class="progring" aria-label="общий счёт ${score} из 100">
+      <circle cx="65" cy="65" r="${RAD}" fill="none" stroke="var(--line)" stroke-width="11"/>
+      <circle cx="65" cy="65" r="${RAD}" fill="none" stroke="var(--${rank[1]})" stroke-width="11" stroke-linecap="round"
+              stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 65 65)"/>
+      <text x="65" y="61" text-anchor="middle" font-size="30" font-weight="700" fill="var(--ink)">${score}</text>
+      <text x="65" y="80" text-anchor="middle" font-size="11" fill="var(--muted)">из 100</text>
+    </svg>
+    <div class="progrank">
+      <div class="rk" style="color:var(--${rank[1]})">${esc(rank[0])}</div>
+      <div class="muted" style="font-size:12.5px;line-height:1.4">${esc(P.note||"")}</div>
+      ${P.streak?`<div class="streak">🔥 ${esc(P.streak)}</div>`:""}
+    </div>
+  </div>
+  <div class="progbars">${items.map(x=>{
+    const p=Math.round(x.pct*100);
+    const col=p>=100?"ok":p>=60?"ok":p>=30?"warn":"bad";
+    const arrow = x.prev==null?"" : (x.lo ? (x.v<x.prev?"↓":x.v>x.prev?"↑":"→") : (x.v>x.prev?"↑":x.v<x.prev?"↓":"→"));
+    const good = x.prev==null?null : (x.lo ? x.v<x.prev : x.v>x.prev);
+    const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
+    return `<div class="progrow">
+      <div class="pl"><b>${esc(x.n)}</b><i>${esc(x.hint||"")}</i></div>
+      <div class="pbar"><span style="width:${p}%;background:var(--${col})"></span></div>
+      <div class="pv">${esc(fmt(x.v))}<small> / ${esc(fmt(x.goal))} ${esc(x.u||"")}</small>
+        ${arrow?`<em style="color:var(--${good?"ok":"bad"})">${arrow}</em>`:""}</div>
+    </div>`}).join("")}</div>
+  ${(P.badges||[]).length?`<div class="badges">
+    ${got.map(b=>`<span class="bdg on" title="${esc(b.d||"")}">${b.i} ${esc(b.n)}</span>`).join("")}
+    ${next.slice(0,3).map(b=>`<span class="bdg" title="${esc(b.how||"")}">${b.i} ${esc(b.n)}</span>`).join("")}
+  </div>`:""}`;
 }
 function nutForm(){
   const F=nutLS("weight",[]), last=F[F.length-1], first=F[0];
@@ -3753,14 +3798,13 @@ async function nutPull(force){
   if(!gToken){
     if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 2e4) return false;
     localStorage.setItem("nut_pull",Date.now());
-    const [a,b,c]=await Promise.all([
+    const [a,b]=await Promise.all([
       nutPullShop().catch(()=>false),
-      nutPullMeas().catch(()=>false),
-      nutPullChk().catch(()=>false)
+      nutPullMeas().catch(()=>false)
     ]);
     // пришло что-то новое — перерисовать сразу, не дожидаясь вызывающего
-    if((a||b||c) && !window.__nutRedraw){ window.__nutRedraw=1; setTimeout(()=>{window.__nutRedraw=0; render()},0) }
-    return a||b||c;
+    if((a||b) && !window.__nutRedraw){ window.__nutRedraw=1; setTimeout(()=>{window.__nutRedraw=0; render()},0) }
+    return a||b;
   }
   if(!force && Date.now()-(+localStorage.getItem("nut_pull")||0) < 3e5) return false;
   try{
@@ -4490,7 +4534,7 @@ function render(){
     </div>
 
     ${d.nutrition?`<div class="card" style="padding:13px 16px">
-      ${chkForm()}
+      ${progForm(d)}
       <div style="margin:12px 0;border-top:1px solid var(--line)"></div>
       ${nutForm()}
       <div style="margin-top:12px">${nutChart()}</div>
@@ -5320,7 +5364,6 @@ function render(){
       </div>`:""}`;
   }
   nutBind();
-  chkBind();
 }
 
 // ── События
@@ -5378,7 +5421,26 @@ document.getElementById("q").addEventListener("input",e=>{
 });
 const vEl=document.getElementById("ver"); if(vEl) vEl.textContent="сборка "+BUILD;
 ovApply();
-render();
+
+// ── Замок. Код запоминается на устройстве, вводить каждый раз не нужно.
+// Это ширма от посторонних глаз, а не защита: страница публичная, и данные лежат в её тексте.
+(function lockInit(){
+  const CODE="112233", KEY="mk_open";
+  const box=document.getElementById("lock");
+  const open=()=>{ try{localStorage.setItem(KEY,"1")}catch(e){}; document.body.classList.remove("locked"); if(box) box.classList.add("off"); render(); };
+  let saved=null; try{ saved=localStorage.getItem(KEY) }catch(e){}
+  if(saved==="1"){ open(); return }
+  document.body.classList.add("locked");
+  const inp=document.getElementById("lockIn"), go=document.getElementById("lockGo"), msg=document.getElementById("lockMsg");
+  const check=()=>{
+    if(inp.value.trim()===CODE){ open(); return }
+    msg.innerHTML='<span style="color:var(--bad)">Код не подошёл</span>';
+    inp.value=""; inp.focus();
+  };
+  go.addEventListener("click",check);
+  inp.addEventListener("keydown",e=>{ if(e.key==="Enter") check() });
+  setTimeout(()=>inp.focus(),60);
+})();
 
 // Тихо подтягиваем правки, сделанные на других устройствах. Без вопросов и окон:
 // если вход ещё живёт — забираем и перерисовываем, если нет — молчим.
