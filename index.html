@@ -248,6 +248,16 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .progrow .pl{display:flex;flex-direction:column;line-height:1.2}
 .progrow .pl b{font-size:13px;font-weight:600}
 .progrow .pl i{font-style:normal;font-size:11px;color:var(--muted)}
+.pdays{display:flex;gap:4px}
+.pday{flex:1;min-width:0;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.pday i{font-style:normal;font-size:10px;color:var(--muted)}
+.pday.m-ok{background:color-mix(in srgb,var(--ok) 78%,transparent);border-color:transparent}
+.pday.m-ok i{color:#fff}
+.pday.m-near{background:color-mix(in srgb,var(--warn) 62%,transparent);border-color:transparent}
+.pday.m-near i{color:#fff}
+.pday.m-low{background:color-mix(in srgb,var(--bad) 55%,transparent);border-color:transparent}
+.pday.m-low i{color:#fff}
+.pday.m-none{background:transparent;border-style:dashed}
 .pbar{height:9px;border-radius:6px;background:var(--line);overflow:hidden}
 .pbar span{display:block;height:100%;border-radius:6px;transition:width .5s}
 .progrow .pv{font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
@@ -256,7 +266,7 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
 .bdg{font-size:12px;padding:4px 10px;border-radius:20px;border:1px dashed var(--line);color:var(--muted)}
 .bdg.on{border-style:solid;border-color:var(--ok);color:var(--ink);background:color-mix(in srgb,var(--ok) 10%,transparent)}
-@media(max-width:560px){.progrow{grid-template-columns:1fr auto}.progrow .pbar{grid-column:1/-1;order:3}}
+@media(max-width:560px){.progrow{grid-template-columns:1fr auto}.progrow .pbar,.progrow .pdays{grid-column:1/-1;order:3}}
 .wbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .wbox input{width:100px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:14px}
 .wbox button{padding:7px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13.5px}
@@ -2049,12 +2059,12 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
       streak:"1 неделя с полным разбором",
       items:[
         {n:"Вес",hint:"от 85,4 к цели 78",live:"weight",v:85.2,base:85.4,goal:78,u:"кг",lo:1,prev:85.4},
-        {n:"Белок в день",hint:"главный провал по БЖУ",v:109,base:86,goal:140,u:"г",prev:86},
-        {n:"Калории в день",hint:"недобор третью неделю",v:2115,base:1560,goal:2300,u:"ккал",prev:1880},
-        {n:"Шаги в день",hint:"среднее за неделю",v:9121,base:7194,goal:10000,u:"",prev:9456},
+        {n:"Белок",kind:"day",goal:140,u:"г",days:[["2026-09-04",117],["2026-09-05",86],["2026-09-06",109]]},
+        {n:"Калории",kind:"day",goal:2300,u:"ккал",band:0.1,days:[["2026-09-03",1560],["2026-09-04",1930],["2026-09-05",1880],["2026-09-06",2115]]},
+        {n:"Шаги",hint:"среднее за неделю",v:9121,base:7194,goal:10000,u:"",prev:9456},
         {n:"Активные калории",hint:"среднее за неделю",v:444,base:345,goal:500,u:"ккал",prev:345},
-        {n:"Регулярность сна",hint:"балл трекера, норма от 70",v:64,base:56,goal:70,u:"",prev:56},
-        {n:"Засыпание",hint:"минут после полуночи",v:46,base:115,goal:0,u:"мин",lo:1,prev:115}
+        {n:"Регулярность сна",hint:"балл трекера за неделю, норма от 70",v:64,base:56,goal:70,u:"",prev:56},
+        {n:"Засыпание",hint:"минут после полуночи, среднее за неделю",v:46,base:115,goal:0,u:"мин",lo:1,prev:115}
       ],
       badges:[
         {i:"🚀",n:"Старт",got:1,d:"03.09.2026 — план начат, первый замер"},
@@ -3515,7 +3525,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="06.09 23:09";   // подставляется при публикации
+const BUILD="06.09 23:15";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3634,13 +3644,40 @@ function nutChart(){
 }
 // форма замера — одна на все экраны
 // ── Прогресс по метрикам. Значения обновляются при недельном разборе, вес — сам из замеров
+function progDays(){                       // последние 7 дней, сегодня последний
+  const out=[], t=new Date();
+  for(let i=6;i>=0;i--){ const x=new Date(t); x.setDate(t.getDate()-i); out.push(x.toISOString().slice(0,10)) }
+  return out;
+}
+// день засчитан, если попал в коридор вокруг цели: ok — норма, near — почти, low — далеко
+function dayMark(x,v){
+  if(v==null) return null;
+  if(x.band){                                        // коридор в обе стороны (калории)
+    const dv=Math.abs(v-x.goal)/x.goal;
+    return dv<=x.band?"ok":dv<=x.band*2?"near":"low";
+  }
+  const r=v/x.goal;                                  // чем больше, тем лучше (белок)
+  return r>=1?"ok":r>=0.8?"near":"low";
+}
 function progItems(d){
   const P=(d.nutrition&&d.nutrition.prog)||null;
   if(!P) return [];
   const F=nutLS("weight",[]), last=F[F.length-1];
+  const week=progDays();
   return P.items.map(it=>{
     const x=Object.assign({},it);
     if(x.live==="weight" && last && last.v) x.v=last.v;      // вес всегда свежий
+    if(x.kind==="day"){
+      const map={}; (x.days||[]).forEach(r=>map[r[0]]=r[1]);
+      x.cells=week.map(dd=>({d:dd,v:map[dd]==null?null:map[dd],m:dayMark(x,map[dd])}));
+      const have=x.cells.filter(c=>c.v!=null);
+      x.hit=x.cells.filter(c=>c.m==="ok").length;
+      x.avg=have.length?Math.round(have.reduce((a,c)=>a+c.v,0)/have.length):null;
+      x.have=have.length;
+      // вклад в общий счёт — среднее по дням, а не одна цифра
+      x.pct=have.length?Math.max(0,Math.min(1,have.reduce((a,c)=>a+(x.band?1-Math.min(1,Math.abs(c.v-x.goal)/x.goal/(x.band*2)):Math.min(1,c.v/x.goal)),0)/have.length)):0;
+      return x;
+    }
     const span=x.base-x.goal;
     let r = span===0 ? 1 : (x.base-x.v)/span;                 // работает в обе стороны
     x.pct=Math.max(0,Math.min(1,r));
@@ -3671,11 +3708,24 @@ function progForm(d){
     </div>
   </div>
   <div class="progbars">${items.map(x=>{
+    const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
+    const DOW=["вс","пн","вт","ср","чт","пт","сб"];
+    if(x.kind==="day"){
+      const cells=x.cells.map(c=>{
+        const cl=c.m?("m-"+c.m):"m-none";
+        const t=c.v==null?`${ru(c.d)} — нет записи`:`${ru(c.d)} — ${fmt(c.v)} ${x.u||""}`;
+        return `<span class="pday ${cl}" title="${esc(t)}"><i>${DOW[new Date(c.d).getDay()]}</i></span>`;
+      }).join("");
+      return `<div class="progrow day">
+        <div class="pl"><b>${esc(x.n)}</b><i>цель ${fmt(x.goal)} ${esc(x.u||"")} в день${x.avg!=null?` · в среднем ${fmt(x.avg)}`:""}</i></div>
+        <div class="pdays">${cells}</div>
+        <div class="pv">${x.hit}<small> / 7 дней в норме</small></div>
+      </div>`;
+    }
     const p=Math.round(x.pct*100);
-    const col=p>=100?"ok":p>=60?"ok":p>=30?"warn":"bad";
+    const col=p>=60?"ok":p>=30?"warn":"bad";
     const arrow = x.prev==null?"" : (x.lo ? (x.v<x.prev?"↓":x.v>x.prev?"↑":"→") : (x.v>x.prev?"↑":x.v<x.prev?"↓":"→"));
     const good = x.prev==null?null : (x.lo ? x.v<x.prev : x.v>x.prev);
-    const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
     return `<div class="progrow">
       <div class="pl"><b>${esc(x.n)}</b><i>${esc(x.hint||"")}</i></div>
       <div class="pbar"><span style="width:${p}%;background:var(--${col})"></span></div>
