@@ -2314,7 +2314,7 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
      pts:[["19.11.2023",25],["14.12.2025",24.3],["08.08.2026",30.8]]},
     {id:"tsh",name:"ТТГ",unit:"мЕд/л",sys:"thyro",norm:[0.4,4.0],
      pts:[["19.11.2023",3.79],["09.12.2023",1.57],["06.04.2025",2.46],["26.01.2026",2.81]]},
-    {id:"weight",name:"Вес",unit:"кг",sys:"endo",
+    {id:"weight",name:"Вес",unit:"кг",sys:"endo",lo:1,goal:78,
      pts:[["02.01.2026",82.95],["10.01.2026",83.55],["29.01.2026",82.2],["19.03.2026",82.4],["25.03.2026",83.8],["01.04.2026",85.2],["11.04.2026",84.6],["10.07.2026",83.65],["04.08.2026",85.4],["08.08.2026",85.0]]},
     {id:"iop",name:"Внутриглазное давление, правый глаз",unit:"мм рт. ст.",sys:"eye",norm:[10,21],hi:21,
      pts:[["12.11.2020",17],["17.08.2021",21],["08.07.2025",15],["14.08.2026",18.3]]},
@@ -3076,7 +3076,7 @@ function inNorm(s,v){
 const PROG_SER=["steps","actkcal","movehrs","sleeponset","sleepdur"];
 function changed(d,months){
   const out=[];
-  (d.series||[]).filter(x=>!(d.nutrition&&PROG_SER.includes(x.id))).forEach(x=>{
+  seriesOf(d).filter(x=>!(d.nutrition&&PROG_SER.includes(x.id))).forEach(x=>{
     const pts=(x.pts||[]).map(p=>({d:serDate(p[0]),v:p[1]})).filter(p=>p.d).sort((a,b)=>a.d<b.d?-1:1);
     if(pts.length<2) return;
     const win=pts.filter(p=>monthsAgo(p.d)<=months);
@@ -3084,10 +3084,28 @@ function changed(d,months){
     if(!a||!b||a===b||!a.v||!b.v) return;
     const dp=(b.v-a.v)/Math.abs(a.v)*100;
     const bad=inNorm(x,b.v)===false;
-    out.push({n:x.name,u:x.unit,a:a.v,b:b.v,da:a.d,db:b.d,dp,bad,
-              cls: bad?"bad" : Math.abs(dp)>=10?"warn":"ok"});
+    // куда «хорошо»: у веса и у показателей с верхней границей рост — это ухудшение
+    const lowerBetter = x.lo===1 || x.hi!=null || (x.norm && x.norm[0]===0);
+    const worse = lowerBetter ? dp>0 : null;
+    let cls="ok";
+    if(bad) cls="bad";
+    else if(worse && Math.abs(dp)>=1) cls="warn";
+    else if(worse===null && Math.abs(dp)>=10) cls="warn";
+    out.push({n:x.name,u:x.unit,a:a.v,b:b.v,da:a.d,db:b.d,dp,bad,worse,cls});
   });
   return out.sort((p,q)=>Math.abs(q.dp)-Math.abs(p.dp));
+}
+// ряды человека: вес склеивается с замерами из формы, чтобы графики и выводы не отставали
+function seriesOf(d){
+  const S=(d.series||[]).map(x=>Object.assign({},x));
+  const w=S.find(x=>x.id==="weight");
+  if(w){
+    const map={};
+    (w.pts||[]).forEach(p=>{ const iso=serDate(p[0]); if(iso) map[iso]=p[1] });
+    nutLS("weight",[]).forEach(r=>{ if(r&&r.d&&r.v) map[r.d]=r.v });
+    w.pts=Object.keys(map).sort().map(k=>{ const [y,m,dd]=k.split("-"); return [`${dd}.${m}.${y}`,map[k]] });
+  }
+  return S;
 }
 function serDate(x){                     // в рядах даты лежат как ДД.ММ.ГГГГ
   const m=String(x).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
@@ -3128,7 +3146,7 @@ function insightsGaps(d){
     if(m>=10) g.push(`Последний анализ был <b>${m} мес. назад</b> — ${ru(lastLab.d)}.`);
   }
   // показатели, которые перестали появляться: последняя точка ряда старше года
-  (d.series||[]).forEach(x=>{
+  seriesOf(d).forEach(x=>{
     const pts=(x.pts||[]).map(p=>serDate(p[0])).filter(Boolean).sort();
     const last=pts[pts.length-1];
     if(last && monthsAgo(last)>=12) g.push(`<b>${esc(x.name)}</b> не измерялся с ${ru(last)} — ${Math.round(monthsAgo(last))} мес.`);
@@ -3780,7 +3798,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="07.09 10:07";   // подставляется при публикации
+const BUILD="07.09 10:14";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3920,7 +3938,7 @@ function kpiLive(d){
   }
 
   if(bp){
-    const S=d.series||d.ser||[];
+    const S=seriesOf(d);
     const sb=(S.find(x=>x.id==="sbp")||{}).pts||[], db=(S.find(x=>x.id==="dbp")||{}).pts||[];
     if(sb.length&&db.length){
       const avg=a=>a.reduce((x,y)=>x+y[1],0)/a.length;
@@ -5069,7 +5087,7 @@ function render(){
 
   else if(tab==="dyn"){
     const groups={};
-    d.series.forEach(s=>{(groups[s.sys]=groups[s.sys]||[]).push(s)});
+    seriesOf(d).forEach(s=>{(groups[s.sys]=groups[s.sys]||[]).push(s)});
     m.innerHTML=`<div class="card"><h2>Все ряды с динамикой — ${d.series.length}</h2>
       <div class="muted" style="margin:-6px 0 0">Показатели, у которых есть направление, а не разовое значение.
       Красная зона — выход за порог. Нажмите заголовок системы, чтобы открыть её целиком.</div></div>
@@ -5589,7 +5607,7 @@ function render(){
   else if(tab==="task"&&taskIdx!=null&&d.attention[taskIdx]){
     const a=d.attention[taskIdx], o=a.sys?organOf(a.sys):null;
     const all=a.sys?DATA[cur].rec.filter(r=>r.sys===a.sys).sort((x,y)=>y.d.localeCompare(x.d)):[];
-    const ser=a.sys?d.series.filter(s=>s.sys===a.sys):[];
+    const ser=a.sys?seriesOf(d).filter(s=>s.sys===a.sys):[];
     const by=t=>all.filter(r=>r.t===t&&!r.op);
     const ops=all.filter(r=>r.op);
     const goto=(lab,n,id)=>`<div class="kpi ${n?"":"off"}" ${n?`data-goto="${id}"`:""}>
@@ -5641,7 +5659,7 @@ function render(){
   else if(tab==="sys"&&sysFilter){
     const o=organOf(sysFilter);
     const all=DATA[cur].rec.filter(r=>inSys(r,sysFilter)&&matches(r)).sort((a,b)=>b.d.localeCompare(a.d));
-    const ser=d.series.filter(s=>isLnk(sysFilter)?false:s.sys===sysFilter);
+    const ser=seriesOf(d).filter(s=>isLnk(sysFilter)?false:s.sys===sysFilter);
     const ops=all.filter(r=>r.op);
     const by=t=>all.filter(r=>r.t===t&&!r.op);
     const goto=(lab,n,id)=>`<div class="kpi ${n?"":"off"}" ${n?`data-goto="${id}"`:""}>
@@ -5718,7 +5736,7 @@ function render(){
 
   else{
     const list=recs(tab==="all"?null:tab);
-    const ser=d.series.filter(s=>!sysFilter||s.sys===sysFilter);
+    const ser=seriesOf(d).filter(s=>!sysFilter||s.sys===sysFilter);
     const showCharts=(tab==="lab"||sysFilter)&&ser.length;
     const other=sysFilter?DATA[cur].rec.filter(r=>r.sys===sysFilter).length:0;
     const S=query?searchIn(cur):null;
