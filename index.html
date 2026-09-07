@@ -238,6 +238,21 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .lockbox input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:17px;text-align:center;letter-spacing:.25em}
 .lockbox button{width:100%;margin-top:9px;padding:11px;font-size:15px}
 #lockMsg{margin-top:9px;font-size:12.5px;min-height:16px}
+.nut-meal.edit{cursor:pointer;border-radius:7px;transition:background .15s}
+.nut-meal.edit:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.nut-meal .pen{font-style:normal;opacity:0;margin-left:auto;padding-left:8px;color:var(--muted)}
+.nut-meal.edit:hover .pen{opacity:1}
+.mrow .grip{cursor:grab;color:var(--muted);user-select:none;width:22px;text-align:center}
+.mrow.drag{opacity:.4}
+.mrow.over td{border-top:2px solid var(--ink)}
+.mcell{cursor:pointer}
+.mcell:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.lnk{background:none;border:0;padding:0;color:var(--ink);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px}
+.alts{display:flex;flex-direction:column;gap:5px;max-height:190px;overflow:auto}
+.alt{text-align:left;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;
+  background:var(--card);color:var(--ink);cursor:pointer;font-family:inherit}
+.alt:hover{border-color:var(--ink)}
+.frow{display:flex;gap:8px;align-items:center;margin-top:10px}
 .subnav{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
 .subnav button{padding:7px 13px;font-size:13.5px;border-radius:20px;border:1px solid var(--line);
   background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit}
@@ -3799,7 +3814,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="07.09 10:27";   // подставляется при публикации
+const BUILD="07.09 10:47";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4125,6 +4140,47 @@ function progForm(d){
       <button class="gobtn ach-more" id="achAll">Посмотреть все достижения →</button>
     </div>`})()}`;
 }
+// Меню недели: если его правили руками, берём правленую версию
+const MEALS=["Завтрак","Обед","Перекус","Ужин"];
+function menuOf(d){
+  const base=((d.nutrition||{}).menu)||[];
+  const my=nutLS("menu",null);
+  if(!my||!Array.isArray(my)||my.length!==base.length) return base;
+  return my;
+}
+function menuEdited(d){ const my=nutLS("menu",null); return !!(my&&Array.isArray(my)) }
+function menuSet(rows){ nutSET("menu",rows); }
+function menuReset(){ try{localStorage.removeItem("nut_menu")}catch(e){} }
+// окно правки одного приёма пищи
+function mealEdit(di,mi){
+  const d=DATA[cur], rows=menuOf(d).map(r=>r.slice());
+  const cur1=rows[di][mi+1]||"";
+  const alts=rows.map((r,i)=>[r[0],r[mi+1]]).filter((x,i)=>i!==di&&x[1]);
+  modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
+    <h2>${esc(MEALS[mi])} · ${esc(rows[di][0])}</h2>
+    <div class="ctx">Меняется только в твоей книжке на этом устройстве. План остаётся как был — его можно вернуть кнопкой ниже.</div>
+    <div class="addform">
+      <div class="fld"><label for="mealTx">Что будет вместо</label>
+        <textarea id="mealTx" rows="3" style="width:100%">${esc(cur1)}</textarea></div>
+      ${alts.length?`<div class="fld"><label>Взять из другого дня</label>
+        <div class="alts">${alts.map(a=>`<button class="alt" data-alt="${esc(a[1])}">${esc(a[0])}: ${esc(String(a[1]).slice(0,60))}</button>`).join("")}</div></div>`:""}
+      <div class="frow"><button id="mealSave">Сохранить</button>
+        <button id="mealPlan" class="gobtn" style="width:auto;padding:8px 14px">Вернуть по плану</button></div>
+    </div></div>`;
+  modal.classList.add("on");
+  modal.querySelectorAll("[data-alt]").forEach(b=>b.addEventListener("click",()=>{
+    modal.querySelector("#mealTx").value=b.dataset.alt;
+  }));
+  modal.querySelector("#mealSave").addEventListener("click",()=>{
+    rows[di][mi+1]=modal.querySelector("#mealTx").value.trim();
+    menuSet(rows); closeModal(); render();
+  });
+  modal.querySelector("#mealPlan").addEventListener("click",()=>{
+    const base=((DATA[cur].nutrition||{}).menu)||[];
+    rows[di][mi+1]=base[di]?base[di][mi+1]:"";
+    menuSet(rows); closeModal(); render();
+  });
+}
 function nutForm(){
   const F=nutLS("weight",[]), last=F[F.length-1], first=F[0];
   const dd=(a,b)=>a!=null&&b!=null?(a-b).toFixed(1):null;
@@ -4156,6 +4212,32 @@ function nutShopPush(){
       .then(()=>{const e=document.getElementById("shopMsg"); if(e) e.innerHTML='<span style="color:var(--ok)">синхронизировано</span>'})
       .catch(()=>{const e=document.getElementById("shopMsg"); if(e) e.innerHTML='<span class="muted">уйдёт при следующей синхронизации</span>'});
   },1200);
+}
+// перетаскивание строк недельного меню
+function menuDnd(){
+  const body=document.getElementById("menuBody");
+  if(!body||body.dataset.on) return;
+  body.dataset.on="1";
+  let from=null;
+  body.querySelectorAll(".mrow").forEach(tr=>{
+    tr.addEventListener("dragstart",e=>{ from=+tr.dataset.row; tr.classList.add("drag");
+      try{e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",String(from))}catch(x){} });
+    tr.addEventListener("dragend",()=>{ tr.classList.remove("drag");
+      body.querySelectorAll(".over").forEach(x=>x.classList.remove("over")) });
+    tr.addEventListener("dragover",e=>{ e.preventDefault(); tr.classList.add("over") });
+    tr.addEventListener("dragleave",()=>tr.classList.remove("over"));
+    tr.addEventListener("drop",e=>{
+      e.preventDefault(); tr.classList.remove("over");
+      const to=+tr.dataset.row;
+      if(from==null||from===to) return;
+      const rows=menuOf(DATA[cur]).map(r=>r.slice());
+      const day=rows.map(r=>r[0]);                 // подписи дней остаются на местах
+      const moved=rows.splice(from,1)[0];
+      rows.splice(to,0,moved);
+      rows.forEach((r,i)=>r[0]=day[i]);            // переезжает еда, а не названия дней
+      menuSet(rows); render();
+    });
+  });
 }
 function nutBind(){
   nutPull().then(ok=>{ if(ok) render() });   // замеры и галочки с других устройств
@@ -5377,7 +5459,9 @@ function render(){
     const wkNum=st?Math.max(1,Math.floor((Date.now()-st.getTime())/6048e5)+1):1;
     const stepIdx=Math.min((n.week||[]).length-1,wkNum-1);
     const DN=["Вс","Пн","Вт","Ср","Чт","Пт","Сб"], today=DN[new Date().getDay()];
-    const todayMenu=(n.menu||[]).find(r=>r[0]===today);
+    const MENU=menuOf(d);
+    const todayIdx=MENU.findIndex(r=>r[0]===today);
+    const todayMenu=todayIdx>=0?MENU[todayIdx]:null;
     const kcalNow=wkNum<=2?"2300":wkNum<=4?"2150":"2000";
     // тарелка: половина овощи, четверть белок, четверть крупа
     const plate=`<svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Метод тарелки">
@@ -5453,17 +5537,22 @@ function render(){
         <div class="lbl">Сегодня · ${today} · неделя ${wkNum} из 6 · норма ${kcalNow} ккал</div>
         ${st2?`<div class="step">${esc(st2[1])}</div>`:""}
         ${todayMenu?`<div>
-          <div class="nut-meal"><b>Завтрак</b><span>${esc(todayMenu[1])}</span></div>
-          <div class="nut-meal"><b>Обед</b><span>${esc(todayMenu[2])}</span></div>
-          <div class="nut-meal"><b>Перекус</b><span>${esc(todayMenu[3])}</span></div>
-          <div class="nut-meal"><b>Ужин</b><span>${esc(todayMenu[4])}</span></div>
+          ${MEALS.map((m,i)=>`<div class="nut-meal edit" data-meal="${todayIdx}:${i}" title="Нажми, чтобы поменять">
+            <b>${m}</b><span>${esc(todayMenu[i+1])}</span><i class="pen">✎</i></div>`).join("")}
         </div>`:""}
         <div class="muted" style="font-size:12px;margin-top:8px">Ужин готовится с запасом — порция в контейнер, это завтрашний обед</div>
       </div>`})()}
 
       <details class="nut-acc"><summary>📅 Меню на всю неделю</summary>
       <div class="muted" style="font-size:12.5px;margin-bottom:6px">Ужин готовится на семью с запасом, и порция сразу уходит в контейнер — это завтрашний обед. Отдельно ничего не готовится.</div>
-      ${n.menu?`<div class="tw"><table><thead><tr><th></th><th>Завтрак ~570</th><th>Обед ~800</th><th>Перекус ~280</th><th>Ужин ~650</th></tr></thead><tbody>${n.menu.map(r=>`<tr><td style="white-space:nowrap"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`).join("")}</tbody></table></div>`:""}
+      <div class="muted" style="font-size:12px;margin-bottom:6px">Строку можно перетащить за ⠿ и поменять порядок дней. Любой приём — нажать и заменить.${
+        menuEdited(d)?` · <button class="lnk" id="menuReset">вернуть меню плана</button>`:""}</div>
+      ${MENU.length?`<div class="tw"><table><thead><tr><th></th><th></th><th>Завтрак ~570</th><th>Обед ~800</th><th>Перекус ~280</th><th>Ужин ~650</th></tr></thead>
+        <tbody id="menuBody">${MENU.map((r,ri)=>`<tr class="mrow" draggable="true" data-row="${ri}">
+          <td class="grip" title="Перетащить">⠿</td>
+          <td style="white-space:nowrap"><b>${esc(r[0])}</b></td>
+          ${[1,2,3,4].map(ci=>`<td class="mcell" data-meal="${ri}:${ci-1}">${esc(r[ci])}</td>`).join("")}
+        </tr>`).join("")}</tbody></table></div>`:""}
       ${n.menuWhy?`<div class="note" style="margin-top:10px"><b>Что изменилось:</b> ${esc(n.menuWhy)}</div>`:""}
       ${n.fish?`<div class="note" style="margin-top:10px"><b>Про рыбу:</b> ${esc(n.fish.replace(/^Поправка[^:]*:\s*/,""))}</div>`:""}
 
@@ -5847,6 +5936,7 @@ function render(){
       </div>`:""}`;
   }
   if(subnav) m.insertAdjacentHTML("afterbegin",subnav);
+  menuDnd();
   nutBind();
 }
 
@@ -5875,6 +5965,10 @@ document.addEventListener("click",e=>{
     return;
   }
   if(e.target===modal){closeModal();return}
+
+  const mc=e.target.closest("[data-meal]");
+  if(mc){ const [a,b]=mc.dataset.meal.split(":").map(Number); mealEdit(a,b); return }
+  if(e.target.closest("#menuReset")){ menuReset(); render(); return }
 
   if(e.target.closest("#achAll")){
     modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
