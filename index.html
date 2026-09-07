@@ -238,6 +238,11 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .lockbox input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:17px;text-align:center;letter-spacing:.25em}
 .lockbox button{width:100%;margin-top:9px;padding:11px;font-size:15px}
 #lockMsg{margin-top:9px;font-size:12.5px;min-height:16px}
+.subnav{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.subnav button{padding:7px 13px;font-size:13.5px;border-radius:20px;border:1px solid var(--line);
+  background:var(--card);color:var(--muted);cursor:pointer;font-family:inherit}
+.subnav button:hover{border-color:var(--ink);color:var(--ink)}
+.subnav button.on{background:var(--ink);border-color:var(--ink);color:var(--card);font-weight:600}
 .tl{margin-top:4px}
 .tl-m{margin-bottom:22px}
 .tl-m>h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
@@ -2185,7 +2190,7 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
     {sys:"endo",  ic:"🍬",sh:"Обмен",     name:"Углеводный обмен",st:"warn",x:50,y:48,txt:"HbA1c 5,7 % — нижняя граница коридора преддиабета, глюкоза 5,58, талия 97 см. Счётчик метаболического синдрома при этом дал 1 из 5"},
     {sys:"vit",   ic:"💊",sh:"Витамины",  name:"Витамины и гормоны",st:"none",x:38,y:51,txt:"Витамин D — дефицит с симптомами в 12.2023, курс пропит, с тех пор не перепроверяли 2,5 года. Тестостерон 8,93 — «серая зона», свободный не сдан"},
     {sys:"gi",    ic:"🍽",sh:"ЖКТ",       name:"ЖКТ",st:"warn",x:47,y:54,txt:"Эритематозная гастродуоденопатия (ЭГДС 17.12.2023). Гастроэнтеролог нарушений не выявил, но заключение не сохранилось. H. pylori не проверяли, FIT не делался"},
-    {sys:"uro",   ic:"🔬",sh:"Урология",  name:"Баланопостит",st:"bad",x:50,y:59,txt:"Стойкое течение с начала 2025 [N48.1]. ИППП и кандида исключены, посев дал Streptococcus agalactiae 10⁷. Повторная явка была на 08.10.2025 — 10 месяцев без наблюдения"},
+    {sys:"uro",   ic:"🔬",sh:"Урология",  name:"Мочеполовая система",st:"bad",x:50,y:59,txt:"Стойкое течение с начала 2025 [N48.1]. ИППП и кандида исключены, посев дал Streptococcus agalactiae 10⁷. Повторная явка была на 08.10.2025 — 10 месяцев без наблюдения"},
     {sys:"gen",   ic:"🧬",sh:"Генетика",  name:"Наследственность",st:"warn",x:60,y:52,txt:"Глаукома у отца, матери и бабушки — три поколения. Катаракта у обоих родителей. Гипертония у матери с дебютом «со школы». Рак прямой кишки у деда в 75 лет"},
     {sys:"fit",   ic:"🏃",sh:"Форма",     name:"Выносливость и мышцы",st:"none",x:44,y:82,txt:"Ходьба выросла: 16–22 августа 11 578 шагов в день — максимум за полгода, против 8 612 неделей раньше и 9 521 в марте. Кардиореспираторная выносливость не измерялась ни разу, силовых нагрузок нет, бег оборвался 05.05.2026"}
   ],
@@ -2793,7 +2798,12 @@ function organOf(sys){return DATA[cur].organs.find(o=>o.sys===sys)}
 const LNK={enurez:{ic:"🌙",name:"Ночной энурез — всё, что с ним связано"}};
 function isLnk(f){return !!LNK[f]}
 function inSys(r,f){return isLnk(f) ? r.lnk===f : r.sys===f}
-function sysName(sys){if(LNK[sys])return LNK[sys].name;const o=organOf(sys);return o?o.name:sys}
+const SYSRU={lung:"Лёгкие и дыхание",uro:"Мочеполовая система",ent:"ЛОР",eye:"Глаза",skin:"Кожа",
+  heart:"Сердце и сосуды",spine:"Позвоночник",liver:"Печень",kidney:"Почки",blood:"Кровь",gi:"ЖКТ",
+  endo:"Углеводный обмен",vit:"Витамины и гормоны",thyro:"Щитовидная железа",neuro:"Неврология",
+  psy:"Психоэмоциональное состояние",sleep:"Сон и режим",teeth:"Зубы и дёсны",gen:"Наследственность",
+  fit:"Активность",ortho:"Опорно-двигательный аппарат",allergy:"Аллергия",imm:"Иммунитет"};
+function sysName(sys){if(LNK[sys])return LNK[sys].name;const o=organOf(sys);return o?o.name:(SYSRU[sys]||sys)}
 
 function sysNameIn(k,sys){const o=DATA[k].organs.find(o=>o.sys===sys);return o?o.name:sys}
 // весь текст записи одной строкой — по нему и ищем
@@ -2941,6 +2951,10 @@ function silhouette(){
 
 // ── Вкладки
 const TABS=[["home","Обзор"],["nutr","Питание"],["all","Всё"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["sym","Симптомы"],["dx","Диагнозы"],["anam","Анамнез"]];
+// Медкарта — один пункт верхнего меню, внутри разделы. Симптомы первыми
+const CARD=[["sym","Симптомы"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["dx","Диагнозы"]];
+const CARDK=CARD.map(x=>x[0]);
+const TOP=[["home","Обзор"],["nutr","Питание"],["all","Всё"],["card","Медкарта"],["anam","Анамнез"]];
 
 function idOf(r){return DATA[cur].rec.indexOf(r)}
 
@@ -3737,7 +3751,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="06.09 23:51";   // подставляется при публикации
+const BUILD="07.09 09:53";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4796,8 +4810,11 @@ function render(){
     return;
   }
 
-  document.getElementById("nav").innerHTML=TABS
-    .map(([k,n])=>`<button data-t="${k}" class="${k===tab?"on":""}">${n}</button>`).join("");
+  const inCard=CARDK.includes(tab);
+  document.getElementById("nav").innerHTML=TOP
+    .map(([k,n])=>`<button data-t="${k}" class="${(k===tab||(k==="card"&&inCard))?"on":""}">${n}</button>`).join("");
+  const subnav=inCard?`<div class="subnav">${CARD
+    .map(([k,n])=>`<button data-t="${k}" class="${k===tab?"on":""}">${n}</button>`).join("")}</div>`:"";
 
   if(query&&tab==="home")tab="visit";
 
@@ -5664,6 +5681,7 @@ function render(){
         ${S.ser.map(x=>`<h3>${hl(x.name)}<span class="muted">, ${esc(x.unit)}</span></h3>${chart(x)}`).join("")}
       </div>`:""}`;
   }
+  if(subnav) m.insertAdjacentHTML("afterbegin",subnav);
   nutBind();
 }
 
@@ -5710,7 +5728,7 @@ document.addEventListener("click",e=>{
   if(mw){cur=mw.dataset.medwho;tab="sym";symSel=null;sysFilter=null;closeModal();render();window.scrollTo({top:0});return}
   const md=e.target.closest("[data-med]"); if(md){medSel=md.dataset.med||null;symSel=null;tab="sym";sysFilter=null;render();window.scrollTo({top:0});return}
   const sm=e.target.closest("[data-sym]"); if(sm){symSel=sm.dataset.sym||null;medSel=null;tab="sym";sysFilter=null;render();window.scrollTo({top:0});return}
-  const t=e.target.closest("[data-t]"); if(t){tab=t.dataset.t;sysFilter=null;symSel=null;medSel=null;render();window.scrollTo({top:0});return}
+  const t=e.target.closest("[data-t]"); if(t){tab=t.dataset.t==="card"?CARD[0][0]:t.dataset.t;sysFilter=null;symSel=null;medSel=null;insSel=null;render();window.scrollTo({top:0});return}
   const r=e.target.closest("[data-rec]"); if(r){openRec(+r.dataset.rec);return}
   const k=e.target.closest("[data-task]"); if(k){taskIdx=+k.dataset.task;tab="task";sysFilter=null;
     render();window.scrollTo({top:0,behavior:"smooth"});return}
