@@ -302,12 +302,32 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .pday.m-low{background:color-mix(in srgb,var(--bad) 55%,transparent);border-color:transparent}
 .pday.m-low i{color:#fff}
 .pday.m-none{background:transparent;border-style:dashed}
+.pday.m-fut{background:transparent;border-style:dotted;opacity:.45}
 .pbar{height:9px;border-radius:6px;background:var(--line);overflow:hidden}
 .pbar span{display:block;height:100%;border-radius:6px;transition:width .5s}
 .progrow .pv{font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
 .progrow .pv small{font-weight:400;color:var(--muted)}
 .progrow .pv em{font-style:normal;margin-left:4px}
-.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line);align-items:center}
+.lvl-chip{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:20px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--ok) 18%,transparent),color-mix(in srgb,var(--warn) 18%,transparent));
+  border:1px solid var(--line)}
+.ach-more{width:auto;max-width:none;padding:5px 12px;font-size:12.5px;margin-left:auto}
+.ach-head{display:flex;gap:14px;align-items:center}
+.ach-lvl{width:56px;height:56px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:700;color:var(--card);background:var(--ink)}
+.ach-lname{font-size:16px;font-weight:700}
+.ach-t2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 8px}
+.ach-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px}
+.ach{display:flex;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px}
+.ach-i{font-size:24px;line-height:1;width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:9px;background:var(--bg)}
+.ach-b{flex:1;min-width:0}
+.ach-n{display:flex;gap:7px;align-items:center;font-size:14px;margin-bottom:2px}
+.ach-t{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--line);
+  border-radius:20px;padding:1px 7px}
+.ach-h{font-size:11.5px;color:var(--muted);line-height:1.35;margin-bottom:6px}
+.ach-p{font-size:11.5px;margin-top:5px}
 .bdg{font-size:12px;padding:4px 10px;border-radius:20px;border:1px dashed var(--line);color:var(--muted)}
 .bdg.on{border-style:solid;border-color:var(--ok);color:var(--ink);background:color-mix(in srgb,var(--ok) 10%,transparent)}
 @media(max-width:560px){.progrow{grid-template-columns:1fr auto}.progrow .pbar,.progrow .pdays{grid-column:1/-1;order:3}}
@@ -2119,16 +2139,23 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
         {n:"Регулярность сна",hint:"балл трекера за неделю, норма от 70",v:64,base:56,goal:70,u:"",prev:56},
         {n:"Засыпание",hint:"минут после полуночи, среднее за неделю",v:46,base:115,goal:0,u:"мин",lo:1,prev:115}
       ],
-      badges:[
-        {i:"🚀",n:"Старт",got:1,d:"03.09.2026 — план начат, первый замер"},
-        {i:"🔬",n:"База собрана",got:1,d:"06.09.2026 — сон, шаги, движения, вставания оцифрованы"},
-        {i:"📓",n:"Дневник",got:1,d:"04.09.2026 — дневник питания заведён и ведётся"},
-        {i:"🥇",n:"Первый килограмм",got:0,how:"вес 84,4 — минус 1 кг от старта"},
-        {i:"🌙",n:"Полночь",got:0,how:"среднее засыпание раньше 00:00"},
-        {i:"🍗",n:"Белковая неделя",got:0,how:"средний белок 130 г и выше"},
-        {i:"👟",n:"Десять тысяч",got:0,how:"10 000 шагов в среднем за неделю"},
-        {i:"🧂",n:"Чистая соль",got:0,how:"семь дней подряд не выше 5 г соли"},
-        {i:"❤️",n:"Серия давления",got:0,how:"семь замеров подряд без пропусков"}
+      ach:[
+        {i:"📓",n:"Дневник",how:"дней записано в дневнике питания",auto:"diary",u:"дн.",t:[3,14,30]},
+        {i:"⚖️",n:"Замеры",how:"замеров тела внесено",auto:"meas",u:"шт.",t:[5,20,50]},
+        {i:"🍗",n:"Белок",how:"дней с нормой белка 140 г",auto:"protDays",u:"дн.",t:[1,7,21]},
+        {i:"🎯",n:"Калории",how:"дней в коридоре 2300 ккал ±10 %",auto:"kcalDays",u:"дн.",t:[3,14,30]},
+        {i:"🥇",n:"Минус вес",how:"килограммов сброшено от 85,4",auto:"lost",u:"кг",t:[1,3,7]},
+        {i:"👟",n:"Десять тысяч",how:"недель со средним 10 000 шагов",v:0,u:"нед.",t:[1,4,12]},
+        {i:"🔥",n:"Активность",how:"недель со средним 500 активных ккал",v:0,u:"нед.",t:[1,4,12]},
+        {i:"🌙",n:"Полночь",how:"недель со средним засыпанием до 00:00",v:0,u:"нед.",t:[1,4,12]},
+        {i:"⏰",n:"Режим",how:"недель с регулярностью сна 70 и выше",v:0,u:"нед.",t:[1,4,12]},
+        {i:"❤️",n:"Серия давления",how:"полных серий из 7 замеров подряд",v:0,u:"шт.",t:[1,2,4]},
+        {i:"🧂",n:"Соль",how:"дней подряд не выше 5 г соли",v:1,u:"дн.",t:[3,7,21]},
+        {i:"💪",n:"Силовая дома",how:"тренировок с лентой и весом тела",v:0,u:"шт.",t:[4,12,24]},
+        {i:"🍺",n:"Без пива",how:"недель без пива — мочевая кислота 439",v:4,u:"нед.",t:[4,12,26]},
+        {i:"🔬",n:"База данных",how:"оцифровано источников: сон, шаги, движения, вставания, питание, замеры",v:6,u:"шт.",t:[2,4,6]},
+        {i:"🩺",n:"Приёмы закрыты",how:"визитов к врачу с занесённым протоколом",v:8,u:"шт.",t:[3,10,25]},
+        {i:"🧪",n:"Анализы собраны",how:"лабораторных показателей в реестре",v:37,u:"шт.",t:[10,30,80]}
       ]
     },
     menuWhy:"Пересобрано 06.09.2026 по факту первых дней дневника. Три правки, каждая под конкретный провал. Первое: у каждого белкового блюда теперь стоит вес — ужины проседали именно на порции, 125 г мяса вместо 200 стоят 20 г белка и 160 ккал. Второе: гарнир появился и в обед, и в ужин — углеводы четыре дня подряд шли около 170 при норме 265, и добирались они вечером печеньем. Третье: орехи урезаны до 15 г, сыр остался только в субботнем салате — жиры три дня превышали норму и съедали бюджет, который должен был уйти на крупу.",
@@ -2950,11 +2977,11 @@ function silhouette(){
 }
 
 // ── Вкладки
-const TABS=[["home","Обзор"],["nutr","Питание"],["all","Всё"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["sym","Симптомы"],["dx","Диагнозы"],["anam","Анамнез"]];
+const TABS=[["home","Обзор"],["nutr","Питание"],["all","Лента"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["sym","Симптомы"],["dx","Диагнозы"],["anam","Анамнез"]];
 // Медкарта — один пункт верхнего меню, внутри разделы. Симптомы первыми
-const CARD=[["sym","Симптомы"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["dx","Диагнозы"]];
+const CARD=[["sym","Симптомы"],["visit","Посещения"],["instr","Исследования"],["lab","Анализы"],["dyn","Динамика"],["dx","Диагнозы"],["all","Лента"]];
 const CARDK=CARD.map(x=>x[0]);
-const TOP=[["home","Обзор"],["nutr","Питание"],["all","Всё"],["card","Медкарта"],["anam","Анамнез"]];
+const TOP=[["home","Обзор"],["nutr","Питание"],["card","Медкарта"],["anam","Анамнез"]];
 
 function idOf(r){return DATA[cur].rec.indexOf(r)}
 
@@ -3045,9 +3072,11 @@ function inNorm(s,v){
   if(hi!=null&&v>hi) return false;
   return true;
 }
+// ряды, которые уже показаны выше в блоке прогресса — в выводах не повторяем
+const PROG_SER=["steps","actkcal","movehrs","sleeponset","sleepdur"];
 function changed(d,months){
   const out=[];
-  (d.series||[]).forEach(x=>{
+  (d.series||[]).filter(x=>!(d.nutrition&&PROG_SER.includes(x.id))).forEach(x=>{
     const pts=(x.pts||[]).map(p=>({d:serDate(p[0]),v:p[1]})).filter(p=>p.d).sort((a,b)=>a.d<b.d?-1:1);
     if(pts.length<2) return;
     const win=pts.filter(p=>monthsAgo(p.d)<=months);
@@ -3080,7 +3109,7 @@ function insightsChanged(d){
                bad:"Вне нормы — последнее значение за границей коридора"};
   const sel=insSel?list.filter(x=>x.cls===insSel):[];
   return `<div class="card"><h2>🔎 Что изменилось</h2>
-    <div class="muted" style="margin:-6px 0 10px">За последние ${M} месяцев, по рядам динамики. Считает страница, врач это не смотрел. Нажми на кружок, чтобы увидеть список.</div>
+    <div class="muted" style="margin:-6px 0 10px">За последние ${M} месяцев, по рядам динамики. Ряды из блока прогресса выше сюда не входят. Считает страница, врач это не смотрел. Нажми на кружок, чтобы увидеть список.</div>
     <div class="ins-c">
       <button class="ins-p s-ok${insSel==="ok"?" on":""}" data-ins="ok">🟢 ${ok} стабильно</button>
       <button class="ins-p s-warn${insSel==="warn"?" on":""}" data-ins="warn">🟡 ${wa} изменилось</button>
@@ -3751,7 +3780,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="07.09 09:53";   // подставляется при публикации
+const BUILD="07.09 10:07";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -3904,9 +3933,11 @@ function kpiLive(d){
   }
   return out;
 }
-function progDays(){                       // последние 7 дней, сегодня последний
-  const out=[], t=new Date();
-  for(let i=6;i>=0;i--){ const x=new Date(t); x.setDate(t.getDate()-i); out.push(x.toISOString().slice(0,10)) }
+function progDays(){                       // текущая неделя трекера: воскресенье → суббота
+  const t=new Date(), start=new Date(t);
+  start.setDate(t.getDate()-t.getDay());   // getDay(): 0 — воскресенье
+  const out=[];
+  for(let i=0;i<7;i++){ const x=new Date(start); x.setDate(start.getDate()+i); out.push(x.toISOString().slice(0,10)) }
   return out;
 }
 // день засчитан, если попал в коридор вокруг цели: ok — норма, near — почти, low — далеко
@@ -3930,6 +3961,8 @@ function progItems(d){
     if(x.kind==="day"){
       const map={}; (x.days||[]).forEach(r=>map[r[0]]=r[1]);
       x.cells=week.map(dd=>({d:dd,v:map[dd]==null?null:map[dd],m:dayMark(x,map[dd])}));
+      const today=new Date().toISOString().slice(0,10);
+      x.cells.forEach(c=>{ if(c.d>today) c.future=1 });
       const have=x.cells.filter(c=>c.v!=null);
       x.hit=x.cells.filter(c=>c.m==="ok").length;
       x.avg=have.length?Math.round(have.reduce((a,c)=>a+c.v,0)/have.length):null;
@@ -3944,6 +3977,76 @@ function progItems(d){
     return x;
   });
 }
+// ── Достижения: три ступени у каждого, из ступеней складываются очки и уровень
+const TIER=[{n:"бронза",c:"#a97142",p:10},{n:"серебро",c:"#8d99a6",p:25},{n:"золото",c:"#c9a227",p:50}];
+const LEVELS=[[0,"Новичок"],[50,"Втянулся"],[120,"В ритме"],[250,"Держит систему"],[450,"Мастер режима"],[700,"Легенда холодильника"]];
+function achList(d){
+  const P=(d.nutrition&&d.nutrition.prog)||{};
+  const F=nutLS("weight",[]), last=F[F.length-1], w0=(P.items||[]).find(x=>x.live==="weight");
+  const dayHits=key=>{ const it=(P.items||[]).find(x=>x.n===key); if(!it) return 0;
+    return (it.days||[]).filter(r=>dayMark(it,r[1])==="ok").length };
+  const auto={
+    meas:F.length,
+    protDays:dayHits("Белок"),
+    kcalDays:dayHits("Калории"),
+    diary:((P.items||[]).find(x=>x.n==="Калории")||{days:[]}).days.length,
+    lost:(last&&w0)?Math.max(0,Math.round((w0.base-last.v)*10)/10):0
+  };
+  return (P.ach||[]).map(a=>{
+    const x=Object.assign({},a);
+    if(x.auto) x.v=auto[x.auto]||0;
+    x.tier=x.t.filter(t=>x.v>=t).length;                 // 0 — ещё нет, 3 — золото
+    x.next=x.tier<3?x.t[x.tier]:null;
+    x.pct=x.next?Math.min(1,x.v/x.next):1;
+    x.pts=x.tier?TIER[x.tier-1].p:0;
+    return x;
+  });
+}
+function achScore(d){
+  const l=achList(d), pts=l.reduce((a,x)=>a+x.pts,0);
+  let li=0; LEVELS.forEach((L,i)=>{ if(pts>=L[0]) li=i });
+  const nextL=LEVELS[li+1];
+  return {list:l,pts,lvl:li+1,name:LEVELS[li][1],need:nextL?nextL[0]-pts:0,nextAt:nextL?nextL[0]:null,
+          got:l.filter(x=>x.tier).length, gold:l.filter(x=>x.tier===3).length,
+          silver:l.filter(x=>x.tier===2).length, bronze:l.filter(x=>x.tier===1).length};
+}
+function achChip(x){
+  const t=x.tier?TIER[x.tier-1]:null;
+  return `<span class="bdg${x.tier?" on":""}"${t?` style="border-color:${t.c};background:color-mix(in srgb,${t.c} 12%,transparent)"`:""}
+    title="${esc(x.n)} — ${esc(x.how)}. ${x.tier?`Есть ${t.n}`:"пока нет"}${x.next?`, следующая ступень ${x.next}`:""}">${x.i} ${esc(x.n)}${
+    t?` <b style="color:${t.c}">${t.n}</b>`:""}</span>`;
+}
+function achCard(x){
+  const t=x.tier?TIER[x.tier-1]:null;
+  const fm=z=>String(Math.round(z*10)/10).replace(".",",");
+  return `<div class="ach">
+    <div class="ach-i">${x.i}</div>
+    <div class="ach-b">
+      <div class="ach-n"><b>${esc(x.n)}</b>${t?`<span class="ach-t" style="color:${t.c};border-color:${t.c}">${t.n}</span>`:`<span class="ach-t muted">нет</span>`}</div>
+      <div class="ach-h">${esc(x.how)}</div>
+      <div class="pbar"><span style="width:${Math.round(x.pct*100)}%;background:${t?t.c:"var(--muted)"}"></span></div>
+      <div class="ach-p">${fm(x.v)} ${esc(x.u||"")}${x.next?` · до «${TIER[x.tier].n}» ${fm(x.next-x.v)}`:" · максимум взят"}
+        <span class="muted"> · ступени ${x.t.map(z=>fm(z)).join(" / ")}</span></div>
+    </div></div>`;
+}
+function achAll(d){
+  const S=achScore(d);
+  const got=S.list.filter(x=>x.tier).sort((a,b)=>b.tier-a.tier);
+  const rest=S.list.filter(x=>!x.tier).sort((a,b)=>b.pct-a.pct);
+  return `<div class="modal-in">
+    <div class="ach-head">
+      <div class="ach-lvl">${S.lvl}</div>
+      <div>
+        <div class="ach-lname">${esc(S.name)} · уровень ${S.lvl}</div>
+        <div class="muted">${S.pts} очков${S.nextAt?` · до ${S.lvl+1} уровня ещё ${S.need}`:" · максимум"}</div>
+        <div class="muted" style="margin-top:4px">🥇 ${S.gold} · 🥈 ${S.silver} · 🥉 ${S.bronze} · всего открыто ${S.got} из ${S.list.length}</div>
+      </div>
+    </div>
+    <div class="muted" style="font-size:12.5px;margin:10px 0">Очки: бронза 10, серебро 25, золото 50. Считается по накопленным данным — дневник, замеры, трекер.</div>
+    ${got.length?`<div class="ach-t2">Открыто — ${got.length}</div><div class="ach-g">${got.map(achCard).join("")}</div>`:""}
+    ${rest.length?`<div class="ach-t2">В работе — ${rest.length}</div><div class="ach-g">${rest.map(achCard).join("")}</div>`:""}
+  </div>`;
+}
 function progForm(d){
   const items=progItems(d);
   if(!items.length) return "";
@@ -3951,10 +4054,9 @@ function progForm(d){
   const score=Math.round(items.reduce((a,x)=>a+x.pct,0)/items.length*100);
   const rank = score>=80?["В целевом коридоре","ok"] : score>=60?["На графике","ok"] : score>=40?["Набираю ход","warn"] : ["Разгон","warn"];
   const RAD=52, C=2*Math.PI*RAD, off=C*(1-score/100);
-  const got=(P.badges||[]).filter(b=>b.got), next=(P.badges||[]).filter(b=>!b.got);
   const first=progDays()[0], lastd=progDays()[6];
   return `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Прогресс</div>
-  <div class="muted" style="font-size:11.5px;margin-bottom:9px">по дням — ${ru(first)} … ${ru(lastd)} · недельные средние — за ${esc(P.week)} (неделя трекера, вс–сб)</div>
+  <div class="muted" style="font-size:11.5px;margin-bottom:9px">текущая неделя ${ru(first)} — ${ru(lastd)}, счёт по дням обнуляется каждое воскресенье · недельные средние — за ${esc(P.week)}</div>
   <div class="proghead">
     <svg viewBox="0 0 130 130" class="progring" aria-label="общий счёт ${score} из 100">
       <circle cx="65" cy="65" r="${RAD}" fill="none" stroke="var(--line)" stroke-width="11"/>
@@ -3974,8 +4076,8 @@ function progForm(d){
     const DOW=["вс","пн","вт","ср","чт","пт","сб"];
     if(x.kind==="day"){
       const cells=x.cells.map(c=>{
-        const cl=c.m?("m-"+c.m):"m-none";
-        const t=c.v==null?`${ru(c.d)} — нет записи`:`${ru(c.d)} — ${fmt(c.v)} ${x.u||""}`;
+        const cl=c.m?("m-"+c.m):(c.future?"m-fut":"m-none");
+        const t=c.v==null?`${ru(c.d)} — ${c.future?"ещё не наступил":"нет записи"}`:`${ru(c.d)} — ${fmt(c.v)} ${x.u||""}`;
         return `<span class="pday ${cl}" title="${esc(t)}"><i>${DOW[new Date(c.d).getDay()]}</i></span>`;
       }).join("");
       return `<div class="progrow day">
@@ -3994,10 +4096,15 @@ function progForm(d){
       <div class="pv">${esc(fmt(x.v))}<small> / ${esc(fmt(x.goal))} ${esc(x.u||"")}</small>
         ${arrow?`<em style="color:var(--${good?"ok":"bad"})">${arrow}</em>`:""}</div>
     </div>`}).join("")}</div>
-  ${(P.badges||[]).length?`<div class="badges">
-    ${got.map(b=>`<span class="bdg on" title="${esc(b.d||"")}">${b.i} ${esc(b.n)}</span>`).join("")}
-    ${next.slice(0,3).map(b=>`<span class="bdg" title="${esc(b.how||"")}">${b.i} ${esc(b.n)}</span>`).join("")}
-  </div>`:""}`;
+  ${(()=>{ const S=achScore(d); if(!S.list.length) return "";
+    const near=S.list.filter(x=>x.tier<3).sort((a,b)=>b.pct-a.pct).slice(0,2);
+    const top=S.list.filter(x=>x.tier).sort((a,b)=>b.tier-a.tier).slice(0,3);
+    return `<div class="badges">
+      <span class="lvl-chip">Уровень ${S.lvl} · ${esc(S.name)} · ${S.pts} очков</span>
+      ${top.map(achChip).join("")}
+      ${near.map(achChip).join("")}
+      <button class="gobtn ach-more" id="achAll">Посмотреть все достижения →</button>
+    </div>`})()}`;
 }
 function nutForm(){
   const F=nutLS("weight",[]), last=F[F.length-1], first=F[0];
@@ -4856,6 +4963,9 @@ function render(){
         <div class="sub">${esc(k.sub||"")}</div></div>`).join("")}</div>
     </div>
 
+    ${insightsChanged(d)}
+    ${insightsGaps(d)}
+
     ${d.alarm?`<div class="card" style="border-color:var(--bad)">
       <h2 style="color:var(--bad)">Когда не ждать записи — ехать в тот же день</h2>
       <div class="muted" style="margin:-6px 0 12px">Короткий список, ради которого всё остальное может подождать. Если ничего из этого нет — значит и спешить некуда.</div>
@@ -5666,9 +5776,8 @@ function render(){
         </tbody></table></div></div>`:""}
       ${S.nev.length?`<div class="card" id="s-nev"><h2>Никогда не сдавалось — ${S.nev.length}</h2>
         <div>${S.nev.map(n=>`<span class="tag" style="font-size:13px;padding:4px 10px">${hl(n)}</span>`).join(" ")}</div></div>`:""}`:""}
-      ${tab==="all"&&!query&&!sysFilter?insightsChanged(d)+insightsGaps(d):""}
       <div class="card" id="s-rec">
-        <h2>${tab==="all"?"Медицинская история":(query?"Записи":TABS.find(t=>t[0]===tab)[1])}${sysFilter?" · "+esc(sysName(sysFilter)):""} <span class="muted" style="text-transform:none">— ${list.length}</span></h2>
+        <h2>${tab==="all"?"Лента событий":(query?"Записи":TABS.find(t=>t[0]===tab)[1])}${sysFilter?" · "+esc(sysName(sysFilter)):""} <span class="muted" style="text-transform:none">— ${list.length}</span></h2>
         ${filterBar()}
         ${tab==="all"&&!sysFilter?timeline(d):tableRows(list,{showType:tab==="all"})}
         ${(!list.length&&sysFilter&&other)?`<div style="text-align:center;margin-top:10px">
@@ -5710,6 +5819,12 @@ document.addEventListener("click",e=>{
     return;
   }
   if(e.target===modal){closeModal();return}
+
+  if(e.target.closest("#achAll")){
+    modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
+      <h2>Достижения</h2>${achAll(DATA[cur])}</div>`;
+    modal.classList.add("on"); return;
+  }
 
   const ins=e.target.closest("[data-ins]");
   if(ins){ insSel = insSel===ins.dataset.ins ? null : ins.dataset.ins; render(); return }
