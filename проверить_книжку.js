@@ -77,6 +77,34 @@ if (D) for (const k of Object.keys(D)) {
   });
 }
 
+// 7. Плитка «Принимает» (kpi auto:"meds") собирается из meds функцией страницы medsKpi.
+//    Прогоняем именно код страницы, а не его копию: иначе проверка разойдётся с тем, что видит врач.
+if (D && sc) {
+  const pick = (name) => { const m = sc[1].match(new RegExp("function " + name + "\\([\\s\\S]*?\\n\\}\\n")); return m ? m[0] : null; };
+  const ruSrc = (sc[1].match(/const ru=\(iso\)=>\{[^\n]*?\};/) || [])[0];
+  const parts = ["medStart", "medActive", "medShort", "medsKpi"].map(pick);
+  if (!ruSrc || parts.some(x => !x)) bad.push("не найдены функции плитки «Принимает» (ru, medStart, medActive, medShort, medsKpi)");
+  else {
+    let medsKpi;
+    try { medsKpi = new Function(ruSrc + parts.join("\n") + "; return medsKpi;")(); }
+    catch (e) { bad.push("код плитки «Принимает» не собирается: " + e.message); }
+    if (medsKpi) for (const k of Object.keys(D)) {
+      const p = D[k];
+      (p.kpi || []).filter(t => t.auto === "meds").forEach(t => {
+        if (!p.meds) { bad.push(`${k}: плитка «${t.lab}» auto:"meds", а таблицы meds нет`); return; }
+        const t2 = Object.assign({}, t);
+        try { medsKpi(p, t2); } catch (e) { bad.push(`${k}: плитка «${t.lab}» роняет рендер: ${e.message}`); return; }
+        if (!t2.val) bad.push(`${k}: плитка «${t.lab}» получилась пустой`);
+        console.log(`  плитка ${k}: ${t2.val} — ${t2.sub}`);
+      });
+      (p.meds || []).forEach(x => {
+        if (!x.plan && !x.from && !/\d{2}\.\d{2}\.\d{4}/.test(String(x.how || "")))
+          warn.push(`${k}: «${x.n}» без даты старта — в плитку «Принимает» не попадёт как идущий. Поставить from или plan`);
+      });
+    }
+  }
+}
+
 if (warn.length) { console.log("СТОИТ ПОСМОТРЕТЬ:"); warn.forEach(w => console.log("  🟡 " + w)); }
 if (bad.length) {
   console.log("\nПУБЛИКАЦИЯ ОСТАНОВЛЕНА — " + bad.length + ":");
