@@ -57,6 +57,13 @@ if (D) for (const k of Object.keys(D)) {
       warn.push(`${k}: «${x.n}» помечен запланированным, но у него есть from/to — курс посчитается идущим`);
   });
 
+  // 4а. Системы с подтягиванием по меткам: inc — массив строк, и каждая метка реально стоит хоть на одной записи
+  (p.organs || []).forEach(o => {
+    if (o.inc === undefined) return;
+    if (!Array.isArray(o.inc) || o.inc.some(x => typeof x !== "string")) { bad.push(`${k}: у системы «${o.name}» inc не массив строк`); return; }
+    o.inc.forEach(l => { if (!(p.rec || []).some(r => r.lnk === l)) warn.push(`${k}: система «${o.name}» подтягивает метку «${l}», но записей с ней нет`); });
+  });
+
   // 5. Списки дел
   (p.soon || []).forEach(x => {
     if (typeof x.what !== "string" || typeof x.when !== "string")
