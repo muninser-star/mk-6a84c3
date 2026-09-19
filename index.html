@@ -321,6 +321,20 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .macleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-bottom:4px}
 .macleg i,.mt-n i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .macchart{width:100%;height:auto;display:block}
+.sleep-sum{font-size:13px;margin:2px 0 8px}
+.stab{width:100%;border-collapse:collapse;font-size:13px}
+.stab th{text-align:left;font-weight:600;font-size:12px;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:bottom}
+.stab th i{display:block;font-style:normal;font-weight:400;font-size:10.5px;color:var(--muted)}
+.stab td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.stab tr.last td{font-weight:600}
+.stab tr.gap td{color:var(--muted);font-size:12px;font-style:italic}
+.stab .sv span,.sleep-foot .s-ok,.sleep-foot .s-warn,.sleep-foot .s-bad{display:inline-block;padding:1px 7px;border-radius:5px}
+.stab .s-ok,.sleep-foot .s-ok{background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.stab .s-warn,.sleep-foot .s-warn{background:color-mix(in srgb,var(--warn) 22%,transparent)}
+.stab .s-bad,.sleep-foot .s-bad{background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.stab .none{color:var(--muted)}
+.sleep-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:7px}
+.wkbtn.wide{width:auto;padding:0 10px;font-size:12px}
 .mtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px}
 .mt{border:1px solid var(--line);border-left-width:4px;border-radius:8px;padding:8px 10px}
 .mt.s-ok{border-left-color:var(--ok)}.mt.s-warn{border-left-color:var(--warn)}.mt.s-bad{border-left-color:var(--bad)}
@@ -3904,7 +3918,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 18:40";   // подставляется при публикации
+const BUILD="19.09 18:42";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4145,64 +4159,56 @@ function progMacros(P){
     <div class="mtiles">${tiles}</div>
   </div>`;
 }
-// Сон по неделям: четыре ряда на общей оси недель — балл, засыпание, длительность, регулярность
+// Сон по неделям: таблица, одна строка — одна неделя трекера (вс — сб), новые сверху.
+// В клетке — значение, цвет — насколько близко к цели: зелёный в цели, жёлтый рядом, красный далеко
+let sleepAll=false;
 function progSleep(P){
   const S=P.sleep; if(!S||!(S.weeks||[]).length) return "";
-  const G=S.goal, W=S.weeks.map(r=>({d:r[0],sc:r[1],on:r[2],du:r[3],ri:r[4],ro:r[5],
-    rg:(r[4]==null&&r[5]==null)?null:Math.min(...[r[4],r[5]].filter(v=>v!=null))}));
-  const hm=m=>m==null?"—":`${String(Math.floor(((m%1440)+1440)%1440/60)).padStart(2,"0")}:${String(((m%60)+60)%60).padStart(2,"0")}`;
+  const G=S.goal;
+  const hm=m=>m==null?"—":`${String(Math.floor((m+1440)%1440/60)).padStart(2,"0")}:${String((m+1440)%60).padStart(2,"0")}`;
   const dur=m=>m==null?"—":`${Math.floor(m/60)} ч ${String(m%60).padStart(2,"0")}`;
   const MON=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
   const wk=d=>{ const a=new Date(d+"T12:00:00"), b=new Date(a); b.setDate(a.getDate()+6);
     return a.getMonth()===b.getMonth()?`${a.getDate()}–${b.getDate()} ${MON[b.getMonth()]}`:`${a.getDate()} ${MON[a.getMonth()]} – ${b.getDate()} ${MON[b.getMonth()]}`; };
-  const rows=[
-    {k:"sc",n:"Балл сна",lo:75,hi:90,ref:G.score,refl:`цель ${G.score}`,fmt:v=>v,
-      st:v=>v>=G.score?"ok":v>=81?"warn":"bad"},
-    {k:"on",n:"Засыпание",lo:0,hi:150,ref:null,refl:"ниже — раньше",fmt:hm,inv:1,
-      st:v=>v<=30?"ok":v<=75?"warn":"bad"},
-    {k:"du",n:"Ночной сон",lo:300,hi:540,ref:G.dur[0],refl:"от 7 ч",fmt:dur,
-      st:v=>v>=G.dur[0]?"ok":v>=390?"warn":"bad"},
-    {k:"rg",n:"Регулярность",lo:50,hi:90,ref:G.reg,refl:`норма от ${G.reg}`,fmt:v=>v,
-      st:v=>v>=G.reg?"ok":v>=65?"warn":"bad"}
-  ];
-  const Wd=680, L=92, R=6, rh=46, gap=10, T=4, B=22, H=T+rows.length*(rh+gap)+B, iw=Wd-L-R, cw=iw/W.length, bw=Math.max(4,cw*0.62);
-  let svg=`<svg viewBox="0 0 ${Wd} ${H}" class="macchart" role="img" aria-label="Сон по неделям: балл, засыпание, длительность, регулярность">`;
-  rows.forEach((r,ri)=>{
-    const y0=T+ri*(rh+gap), yb=y0+rh;
-    const yv=v=>{ const c=Math.max(r.lo,Math.min(r.hi,v)); return r.inv? y0+rh*(c-r.lo)/(r.hi-r.lo) : yb-rh*(c-r.lo)/(r.hi-r.lo) };
-    svg+=`<text x="0" y="${y0+16}" font-size="12" font-weight="600" fill="var(--ink)">${r.n}</text>
-      <text x="0" y="${y0+30}" font-size="10" fill="var(--muted)">${r.refl}</text>
-      <line x1="${L}" x2="${Wd-R}" y1="${r.inv?y0:yb}" y2="${r.inv?y0:yb}" stroke="var(--line)"/>`;
-    if(r.ref!=null) svg+=`<line x1="${L}" x2="${Wd-R}" y1="${yv(r.ref)}" y2="${yv(r.ref)}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 4" opacity=".6"/>`;
-    W.forEach((w,i)=>{
-      const v=w[r.k], cx=L+cw*i+cw/2;
-      if(v==null){ svg+=`<text x="${cx}" y="${yb-3}" font-size="9" fill="var(--muted)" text-anchor="middle">·</text>`; return; }
-      const y1=yv(v), top=r.inv?y0:Math.min(y1,yb), h=r.inv?Math.max(2,y1-y0):Math.max(2,yb-y1);
-      const extra=r.k==="rg"?` (засыпание ${w.ri??"—"}, пробуждение ${w.ro??"—"})`:"";
-      svg+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--${r.st(v)})" opacity="${i===W.length-1?1:.72}"><title>${wk(w.d)} · ${r.n}: ${r.fmt(v)}${extra}</title></rect>`;
-    });
+  const stSc=v=>v>=G.score?"ok":v>=82?"warn":"bad";
+  const stOn=v=>v<=G.onset?"ok":v<=60?"warn":"bad";
+  const stDu=v=>v>=G.dur[0]?"ok":v>=390?"warn":"bad";
+  const stRg=v=>v>=G.reg?"ok":v>=65?"warn":"bad";
+  // недели по порядку, пропуски — отдельной строкой «нет данных»
+  const W=S.weeks.map(r=>({d:r[0],sc:r[1],on:r[2],du:r[3],ri:r[4],ro:r[5]}));
+  const rows=[];
+  W.forEach((w,i)=>{
+    if(i){ const x=new Date(W[i-1].d+"T12:00:00"); x.setDate(x.getDate()+7);
+      for(;x.toISOString().slice(0,10)<w.d;x.setDate(x.getDate()+7)) rows.push({d:x.toISOString().slice(0,10),gap:1}); }
+    rows.push(w);
   });
-  let pm=-1;
-  W.forEach((w,i)=>{ const m=new Date(w.d+"T12:00:00").getMonth(); if(m!==pm){ pm=m;
-    svg+=`<text x="${L+cw*i+2}" y="${H-6}" font-size="10.5" fill="var(--muted)">${MON[m]}</text>`; } });
-  svg+=`</svg>`;
+  rows.reverse();
   const a=W[W.length-1], b=W[W.length-2];
-  const tile=(r,v,pv,delta)=>`<div class="mt s-${v==null?"ok":r.st(v)}"><div class="mt-n">${r.n}</div>
-    <div class="mt-v">${r.fmt(v)}</div><div class="mt-h">${pv==null?"":`неделей раньше ${r.fmt(pv)}${delta?` · ${delta}`:""}`}</div></div>`;
-  const dm=(x,y,good)=>{ if(x==null||y==null) return ""; const d=x-y; if(!d) return "без изменений";
-    return `<span style="color:var(--${good(d)?"ok":"bad"})">${d>0?"+":"−"}${Math.abs(d)}${good===undefined?"":""}</span>`; };
-  const tiles=[
-    tile(rows[0],a.sc,b&&b.sc,dm(a.sc,b&&b.sc,d=>d>0)),
-    tile(rows[1],a.on,b&&b.on,a.on!=null&&b&&b.on!=null&&a.on!==b.on?`<span style="color:var(--${a.on<b.on?"ok":"bad"})">на ${Math.abs(a.on-b.on)} мин ${a.on<b.on?"раньше":"позже"}</span>`:""),
-    tile(rows[2],a.du,b&&b.du,a.du!=null&&b&&b.du!=null&&a.du!==b.du?`<span style="color:var(--${a.du>b.du?"ok":"bad"})">${a.du>b.du?"+":"−"}${Math.abs(a.du-b.du)} мин</span>`:""),
-    tile(rows[3],a.rg,b&&b.rg,a.ri!=null||a.ro!=null?`засыпание ${a.ri??"—"}, пробуждение ${a.ro??"—"}`:"")
-  ].join("");
-  const hit=W.filter(w=>w.sc>=G.score).length, early=W.filter(w=>w.on!=null&&w.on<=G.onset).length;
+  // что изменилось за последнюю неделю — одной фразой
+  const ch=[];
+  if(b){
+    if(a.sc!=null&&b.sc!=null) ch.push(`балл ${a.sc}${a.sc!==b.sc?` (${a.sc>b.sc?"+":"−"}${Math.abs(a.sc-b.sc)})`:""}`);
+    if(a.on!=null&&b.on!=null) ch.push(`легли в ${hm(a.on)}${a.on!==b.on?` — на ${Math.abs(a.on-b.on)} мин ${a.on<b.on?"раньше":"позже"}`:""}`);
+    if(a.du!=null&&b.du!=null) ch.push(`спали ${dur(a.du)}${a.du!==b.du?` (${a.du>b.du?"+":"−"}${Math.abs(a.du-b.du)} мин)`:""}`);
+    const rg=[a.ri,a.ro].filter(v=>v!=null);
+    if(rg.length) ch.push(rg.every(v=>v>=G.reg)?"регулярность в норме":"регулярность ниже нормы");
+  }
+  const cell=(v,f,st)=>v==null?`<td class="sv none">—</td>`:`<td class="sv"><span class="s-${st(v)}">${f(v)}</span></td>`;
+  const reg=w=>{ if(w.ri==null&&w.ro==null) return `<td class="sv none">—</td>`;
+    const p=(v,l)=>v==null?"":`<span class="s-${stRg(v)}" title="Регулярность ${l}">${v}</span>`;
+    return `<td class="sv">${p(w.ri,"засыпания")}${w.ri!=null&&w.ro!=null?" ":""}${p(w.ro,"пробуждения")}</td>`; };
+  const shown=sleepAll?rows:rows.slice(0,8);
+  const body=shown.map((w,i)=>w.gap
+    ? `<tr class="gap"><td>${wk(w.d)}</td><td colspan="4">нет скриншота трекера</td></tr>`
+    : `<tr${i===0?' class="last"':""}><td>${wk(w.d)}</td>${cell(w.sc,v=>v,stSc)}${cell(w.on,hm,stOn)}${cell(w.du,dur,stDu)}${reg(w)}</tr>`).join("");
   return `<div class="progsec">
-    <div class="progsec-h"><b>Сон по неделям</b><span class="muted" style="font-size:12px">последняя — ${wk(a.d)} · ${W.length} недель с марта</span></div>
-    ${svg}
-    <div class="mtiles">${tiles}</div>
-    <div class="muted" style="font-size:11.5px;margin-top:6px">За ${W.length} недель: балл ${G.score}+ — ${hit} раз, засыпание до полуночи — ${early} раз. Точка вместо столбика — трекер это не показал.</div>
+    <div class="progsec-h"><b>Сон по неделям</b><span class="muted" style="font-size:12px">неделя трекера вс — сб · новые сверху</span></div>
+    ${ch.length?`<div class="sleep-sum">Последняя неделя, ${wk(a.d)}: ${ch.join(", ")}.</div>`:""}
+    <div class="tw"><table class="stab">
+      <thead><tr><th>Неделя</th><th>Балл сна<i>цель ${G.score}+</i></th><th>Легли спать<i>цель до 00:00</i></th><th>Спали за ночь<i>цель от 7 ч</i></th><th>Регулярность<i>засыпание / подъём, норма ${G.reg}+</i></th></tr></thead>
+      <tbody>${body}</tbody></table></div>
+    <div class="sleep-foot"><span><span class="s-ok">зелёный</span> в цели · <span class="s-warn">жёлтый</span> рядом · <span class="s-bad">красный</span> далеко. Всё — средние за неделю по трекеру</span>
+      ${rows.length>8?`<button class="wkbtn wide" data-sleepall="1">${sleepAll?"Свернуть":`Все ${rows.length} недель`}</button>`:""}</div>
   </div>`;
 }
 function progForm(d){
@@ -6125,6 +6131,7 @@ document.addEventListener("click",e=>{
   const ib=e.target.closest("[data-idea]");
   if(ib){ ideasToggle(ib.dataset.idea); ideasModal(); render(); return }
 
+  if(e.target.closest("[data-sleepall]")){ sleepAll=!sleepAll; render(); return; }
   const pw=e.target.closest("[data-progwk]"); if(pw){ progWk=pw.dataset.progwk; render(); return; }
 
   const ins=e.target.closest("[data-ins]");
