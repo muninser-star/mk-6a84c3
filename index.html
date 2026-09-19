@@ -328,6 +328,11 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .ringtxt b{font-size:14px;display:block;margin-bottom:2px}
 .ringtxt .big{font-size:15px;font-weight:700;margin:2px 0}
 .ringtxt .muted{font-size:11.5px}
+.wstats{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
+.wstats>div{flex:1;min-width:84px;border-radius:8px;padding:5px 8px;background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.wstats span{display:block;font-size:10.5px;color:var(--muted)}
+.wstats b{display:block!important;font-size:21px!important;font-weight:800;color:var(--ok);margin:0!important;line-height:1.15}
+.wstats b small{font-size:11.5px;font-weight:600}
 .ringleg{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-top:4px}
 .ringleg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .sleep-sum{font-size:13px;margin:2px 0 8px}
@@ -3927,7 +3932,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 18:55";   // подставляется при публикации
+const BUILD="19.09 18:57";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4223,13 +4228,15 @@ function progSleep(P){
   </div>`;
 }
 // Вес и шаги — два кольца. Внешнее — факт (эта неделя), внутреннее — план (прошлая неделя)
-function ring2(outer,inner,col,center,sub){
+function ring2(outer,inner,col,center,sub,ticks){
   const C=(r)=>2*Math.PI*r, arc=(r,f,c,w)=>`<circle cx="60" cy="60" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"
       stroke-dasharray="${C(r).toFixed(1)}" stroke-dashoffset="${(C(r)*(1-Math.max(0,Math.min(1,f)))).toFixed(1)}" transform="rotate(-90 60 60)"/>`;
   return `<svg viewBox="0 0 120 120" class="ring2">
     <circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="10"/>
     <circle cx="60" cy="60" r="39" fill="none" stroke="var(--line)" stroke-width="7"/>
     ${arc(52,outer,`var(--${col})`,10)}${arc(39,inner,"#3b7dd8",7)}
+    ${(ticks||[]).map(f=>{ const a=(f*360-90)*Math.PI/180, c=Math.cos(a), s=Math.sin(a);
+      return `<line x1="${(60+33*c).toFixed(1)}" y1="${(60+33*s).toFixed(1)}" x2="${(60+58*c).toFixed(1)}" y2="${(60+58*s).toFixed(1)}" stroke="var(--card)" stroke-width="1.6"/>` }).join("")}
     <text x="60" y="62" text-anchor="middle" font-size="17" font-weight="700" fill="var(--${col})">${center}</text>
     <text x="60" y="76" text-anchor="middle" font-size="9.5" fill="var(--muted)">${sub}</text></svg>`;
 }
@@ -4246,11 +4253,22 @@ function progRings(d,P){
     const pw=k>=plan.length-1?plan[k]:plan[k]+(plan[k+1]-plan[k])*(wk-k);
     const total=NUT_W0-NUT_GOAL, lostF=NUT_W0-w.v, lostP=NUT_W0-pw, dv=Math.round((pw-w.v)*100)/100;
     const col=dv>=0?"ok":dv>=-0.5?"warn":"bad";
-    out.push(`<div class="ringbox">${ring2(lostF/total,lostP/total,col,dv===0?"0 кг":`${kg(Math.abs(dv))} кг`,dv>0?"впереди плана":dv<0?"позади плана":"ровно по плану")}
+    // сегменты кольца — недели плана: граница стоит там, где синяя линия ждёт вес к концу недели
+    const ticks=plan.slice(1).map(v=>(NUT_W0-v)/total).filter(f=>f>0&&f<1);
+    // на какой неделе плана ты по весу: где синяя линия проходит через твой вес
+    let kw=0; for(let i=1;i<plan.length;i++){ if(w.v>=plan[i]){ kw=i-1+(plan[i-1]-w.v)/(plan[i-1]-plan[i]); break } kw=i }
+    const n1=z=>fmt(Math.round(z*10)/10), calN=Math.floor(wk)+1, lead=kw-wk;
+    out.push(`<div class="ringbox">${ring2(lostF/total,lostP/total,col,dv===0?"0 кг":`${kg(Math.abs(dv))} кг`,dv>0?"впереди плана":dv<0?"позади плана":"ровно по плану",ticks)}
       <div class="ringtxt"><b>Вес к плану</b>
         <div>Факт ${kg(w.v)} кг · план на ${ru(wd)} — ${kg(pw)} кг</div>
         <div class="big" style="color:var(--${col})">${dv>0?`опережаешь на ${kg(dv)} кг`:dv<0?`отстаёшь на ${kg(-dv)} кг`:"ровно по плану"}</div>
-        <div class="muted">Сброшено ${kg(Math.max(0,lostF))} из ${kg(total)} кг, по плану к этой дате ${kg(lostP)}. До цели ${NUT_GOAL} кг — ${kg(Math.max(0,w.v-NUT_GOAL))} кг</div>
+        <div>По календарю идёт <b style="display:inline;font-size:inherit">${calN}-я неделя из ${plan.length-1}</b>. По весу ты уже там, куда план приводит ${(()=>{ const f=kw-Math.floor(kw); return kw<0.15?"в самом начале":f<0.15||f>0.85?`к концу ${Math.max(1,Math.round(kw))}-й недели`:`в середине ${Math.ceil(kw)}-й недели` })()}${Math.abs(lead)>=0.1?` — ${lead>0?"впереди":"позади"} на ${n1(Math.abs(lead))} нед.`:""}</div>
+        <div class="wstats">
+          <div><span>Сброшено</span><b>${kg(Math.max(0,lostF))} <small>из ${kg(total)} кг</small></b></div>
+          <div><span>Выполнено плана</span><b>${Math.round(Math.max(0,lostF)/total*100)}%</b></div>
+          <div><span>До цели ${NUT_GOAL} кг</span><b>${kg(Math.max(0,w.v-NUT_GOAL))} <small>кг</small></b></div>
+        </div>
+        <div class="muted">Одна долька кольца — одна неделя плана. По плану к этой дате — минус ${kg(lostP)} кг</div>
         <div class="ringleg"><span><i style="background:var(--${col})"></i>факт</span><span><i style="background:#3b7dd8"></i>план (синяя линия)</span></div>
       </div></div>`);
   }
