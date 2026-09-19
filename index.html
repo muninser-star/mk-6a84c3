@@ -313,55 +313,32 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .phead{margin:0 0 14px;padding:0 2px}
 .phead h2{margin:0 0 3px;font-size:21px;line-height:1.2}
 .phead .muted{font-size:13px}
-.proghead{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-.progring{width:118px;height:118px;flex:none}
-.progrank{flex:1;min-width:180px}
-.progrank .rk{font-size:17px;font-weight:700;margin-bottom:3px}
-.streak{display:inline-block;margin-top:7px;font-size:12px;padding:3px 9px;border-radius:20px;background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.progsec{margin-bottom:16px}
+.progsec-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:14px}
+.wknav{display:inline-flex;align-items:center;gap:8px;font-size:12.5px}
+.wkbtn{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:6px;width:28px;height:26px;cursor:pointer;font-size:15px;line-height:1}
+.wkbtn:disabled{opacity:.3;cursor:default}
+.macleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-bottom:4px}
+.macleg i,.mt-n i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.macchart{width:100%;height:auto;display:block}
+.mtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px}
+.mt{border:1px solid var(--line);border-left-width:4px;border-radius:8px;padding:8px 10px}
+.mt.s-ok{border-left-color:var(--ok)}.mt.s-warn{border-left-color:var(--warn)}.mt.s-bad{border-left-color:var(--bad)}
+.mt-n{font-size:12px;color:var(--muted)}
+.mt-v{font-size:17px;font-weight:700;margin:1px 0}
+.mt-v small{font-size:11.5px;font-weight:400;color:var(--muted)}
+.mt-h{font-size:11px;color:var(--muted);line-height:1.35}
 .progbars{display:flex;flex-direction:column;gap:9px}
 .progrow{display:grid;grid-template-columns:minmax(120px,1.15fr) minmax(70px,1.6fr) minmax(96px,auto);gap:10px;align-items:center}
 .progrow .pl{display:flex;flex-direction:column;line-height:1.2}
 .progrow .pl b{font-size:13px;font-weight:600}
 .progrow .pl i{font-style:normal;font-size:11px;color:var(--muted)}
-.pdays{display:flex;gap:4px}
-.pday{flex:1;min-width:0;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
-.pday i{font-style:normal;font-size:10px;color:var(--muted)}
-.pday.m-ok{background:color-mix(in srgb,var(--ok) 78%,transparent);border-color:transparent}
-.pday.m-ok i{color:#fff}
-.pday.m-near{background:color-mix(in srgb,var(--warn) 62%,transparent);border-color:transparent}
-.pday.m-near i{color:#fff}
-.pday.m-low{background:color-mix(in srgb,var(--bad) 55%,transparent);border-color:transparent}
-.pday.m-low i{color:#fff}
-.pday.m-none{background:transparent;border-style:dashed}
-.pday.m-fut{background:transparent;border-style:dotted;opacity:.45}
 .pbar{height:9px;border-radius:6px;background:var(--line);overflow:hidden}
 .pbar span{display:block;height:100%;border-radius:6px;transition:width .5s}
 .progrow .pv{font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
 .progrow .pv small{font-weight:400;color:var(--muted)}
 .progrow .pv em{font-style:normal;margin-left:4px}
-.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line);align-items:center}
-.lvl-chip{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:20px;
-  background:linear-gradient(90deg,color-mix(in srgb,var(--ok) 18%,transparent),color-mix(in srgb,var(--warn) 18%,transparent));
-  border:1px solid var(--line)}
-.ach-more{width:auto;max-width:none;padding:5px 12px;font-size:12.5px;margin-left:auto}
-.ach-head{display:flex;gap:14px;align-items:center}
-.ach-lvl{width:56px;height:56px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:24px;font-weight:700;color:var(--card);background:var(--ink)}
-.ach-lname{font-size:16px;font-weight:700}
-.ach-t2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 8px}
-.ach-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px}
-.ach{display:flex;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px}
-.ach-i{font-size:24px;line-height:1;width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;
-  border-radius:9px;background:var(--bg)}
-.ach-b{flex:1;min-width:0}
-.ach-n{display:flex;gap:7px;align-items:center;font-size:14px;margin-bottom:2px}
-.ach-t{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--line);
-  border-radius:20px;padding:1px 7px}
-.ach-h{font-size:11.5px;color:var(--muted);line-height:1.35;margin-bottom:6px}
-.ach-p{font-size:11.5px;margin-top:5px}
-.bdg{font-size:12px;padding:4px 10px;border-radius:20px;border:1px dashed var(--line);color:var(--muted)}
-.bdg.on{border-style:solid;border-color:var(--ok);color:var(--ink);background:color-mix(in srgb,var(--ok) 10%,transparent)}
-@media(max-width:560px){.progrow{grid-template-columns:1fr auto}.progrow .pbar,.progrow .pdays{grid-column:1/-1;order:3}}
+@media(max-width:560px){.progrow{grid-template-columns:1fr auto}.progrow .pbar{grid-column:1/-1;order:3}}
 .wbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .wbox input{width:100px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:14px}
 .wbox button{padding:7px 14px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13.5px}
@@ -2188,35 +2165,35 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
     prog:{
       week:"30 авг – 5 сен",           // завершённая неделя трекера: вс 30.08 — сб 05.09
       updated:"2026-09-06",
-      note:"Считается по недельному разбору: вес берётся из замеров сам, остальное обновляется по дневнику и скриншотам трекера.",
-      streak:"1 неделя с полным разбором",
+      note:"Питание — из дневника (итоги по дням). Сон, шаги и активность — недельные средние трекера, обновляются при разборе по скриншотам. Вес — сам из замеров.",
       items:[
         {n:"Вес",hint:"от 85,4 к цели 78",live:"weight",v:85.2,base:85.4,goal:78,u:"кг",lo:1,prev:85.4},
-        {n:"Белок",kind:"day",goal:140,u:"г",days:[["2026-09-04",117],["2026-09-05",86],["2026-09-06",109]]},
-        {n:"Калории",kind:"day",goal:2300,u:"ккал",band:0.1,days:[["2026-09-03",1560],["2026-09-04",1930],["2026-09-05",1880],["2026-09-06",2115]]},
         {n:"Шаги",hint:"среднее за неделю",v:9121,base:7194,goal:10000,u:"",prev:9456},
         {n:"Активные калории",hint:"среднее за неделю",v:444,base:345,goal:500,u:"ккал",prev:345},
-        {n:"Регулярность сна",hint:"балл трекера за неделю, норма от 70",v:64,base:56,goal:70,u:"",prev:56},
-        {n:"Засыпание",hint:"минут после полуночи, среднее за неделю",v:46,base:115,goal:0,u:"мин",lo:1,prev:115}
+        // сон — отдельным рядом ниже (sleep), здесь только движение
       ],
-      ach:[
-        {i:"📓",n:"Дневник",how:"дней записано в дневнике питания",auto:"diary",u:"дн.",t:[3,14,30]},
-        {i:"⚖️",n:"Замеры",how:"замеров тела внесено",auto:"meas",u:"шт.",t:[5,20,50]},
-        {i:"🍗",n:"Белок",how:"дней с нормой белка 140 г",auto:"protDays",u:"дн.",t:[1,7,21]},
-        {i:"🎯",n:"Калории",how:"дней в коридоре 2300 ккал ±10 %",auto:"kcalDays",u:"дн.",t:[3,14,30]},
-        {i:"🥇",n:"Минус вес",how:"килограммов сброшено от 85,4",auto:"lost",u:"кг",t:[1,3,7]},
-        {i:"👟",n:"Десять тысяч",how:"недель со средним 10 000 шагов",v:0,u:"нед.",t:[1,4,12]},
-        {i:"🔥",n:"Активность",how:"недель со средним 500 активных ккал",v:0,u:"нед.",t:[1,4,12]},
-        {i:"🌙",n:"Полночь",how:"недель со средним засыпанием до 00:00",v:0,u:"нед.",t:[1,4,12]},
-        {i:"⏰",n:"Режим",how:"недель с регулярностью сна 70 и выше",v:0,u:"нед.",t:[1,4,12]},
-        {i:"❤️",n:"Серия давления",how:"полных серий из 7 замеров подряд",v:0,u:"шт.",t:[1,2,4]},
-        {i:"🧂",n:"Соль",how:"дней подряд не выше 5 г соли",v:1,u:"дн.",t:[3,7,21]},
-        {i:"💪",n:"Силовая дома",how:"тренировок с лентой и весом тела",v:0,u:"шт.",t:[4,12,24]},
-        {i:"🍺",n:"Без пива",how:"недель без пива — мочевая кислота 439",v:4,u:"нед.",t:[4,12,26]},
-        {i:"🔬",n:"База данных",how:"оцифровано источников: сон, шаги, движения, вставания, питание, замеры",v:6,u:"шт.",t:[2,4,6]},
-        {i:"🩺",n:"Приёмы закрыты",how:"визитов к врачу с занесённым протоколом",v:8,u:"шт.",t:[3,10,25]},
-        {i:"🧪",n:"Анализы собраны",how:"лабораторных показателей в реестре",v:37,u:"шт.",t:[10,30,80]}
-      ]
+      // сон по неделям трекера (вс — сб), источник — Денис/Сон/Сон по неделям — данные.md
+      // [начало недели, балл, засыпание в минутах после 00:00, ночной сон в минутах, регулярность засыпания, регулярность пробуждения]
+      // неделя 23–29 авг не снята; «16–22 июл» в источнике, по ряду засыпания — 12–18 июл
+      sleep:{goal:{score:85,onset:0,dur:[420,540],reg:70},weeks:[
+        ["2026-03-01",83,37,420,null,null],["2026-03-08",83,37,420,null,null],["2026-03-15",82,46,464,null,69],
+        ["2026-03-22",79,115,367,null,null],["2026-03-29",79,74,422,null,60],["2026-04-05",81,76,420,null,68],
+        ["2026-04-12",79,54,436,66,null],["2026-04-19",80,68,398,null,null],["2026-04-26",83,123,422,null,null],
+        ["2026-05-03",83,40,441,null,null],["2026-05-10",82,61,415,67,null],["2026-05-17",83,45,413,null,null],
+        ["2026-05-24",86,28,458,null,null],["2026-05-31",80,46,414,null,69],["2026-06-07",81,65,444,59,null],
+        ["2026-06-14",81,null,459,null,56],["2026-06-21",83,66,467,null,65],["2026-06-28",83,66,463,null,65],
+        ["2026-07-05",85,69,445,null,null],["2026-07-12",84,137,407,64,null],["2026-07-19",83,133,383,64,null],
+        ["2026-07-26",85,43,432,null,null],["2026-08-02",84,129,447,null,67],["2026-08-09",79,66,414,null,null],
+        ["2026-08-16",83,115,442,null,null],["2026-08-30",80,46,436,64,null],["2026-09-06",85,35,426,79,74]
+      ]},
+      // дневник питания: [дата, ккал, белок, жиры, углеводы, соль]. Неделя трекера: вс — сб
+      macros:{norm:{k:2300,p:140,f:75,c:265,s:5},days:[
+        ["2026-09-04",1930,117,50,251,null],["2026-09-05",1880,86,90,174,8.5],["2026-09-06",2115,109,92,194,4],
+        ["2026-09-07",2710,167,143,182,6.4],["2026-09-08",2010,93,86,202,6],["2026-09-09",2280,136,85,228,8],
+        ["2026-09-10",2300,100,88,276,7],["2026-09-11",2525,120,99,282,8],["2026-09-12",2220,120,118,161,8.5],
+        ["2026-09-13",2245,124,96,213,8],["2026-09-14",2540,121,82,322,7],["2026-09-15",2595,90,121,283,10],
+        ["2026-09-16",3000,147,141,226,9],["2026-09-17",2040,103,62,256,7],["2026-09-18",2485,126,89,283,7]
+      ]}
     },
     menuWhy:"Меню на 21–27.09.2026, собрано 19.09 по итогам недели 14–19.09. Главное, что показала неделя: меню плана почти не готовилось. Из пяти ужинов приготовлен один, в остальные вечера были готовые блюда, а обед все пять дней вне дома. Поэтому это меню собрано под реальную неделю. Готовки две: в воскресенье (курица в горчичном на понедельник) и в среду (тушёная говядина на четверг). В остальные дни сборка за 10–20 минут, в пятницу ужин целиком из готового. Завтраки из того, что ты и так ешь: сырники, гранола с йогуртом, бутерброды, пшёнка. Жиры неделю шли около 99 г при норме 75, больше всего их дали готовые салаты на масле и майонезе, перец с моцареллой и соусы в роллах. Поэтому ниже список готового, которое брать и которое обходить. Белок проседал в дни готовой еды (в ней 11–22 г на порцию), поэтому в каждом ужине 40–55 г. Рыба 2 раза (вт, чт), красное мясо 3 раза (ср, сб, вс) — детям на время курса железа. Калории 2300; решение по ступени — по среднему весу 14–20.09: до 84,3 кг держим 2300, выше 84,5 — переходим на 2150.",
     fish:"Поправка по рыбе с учётом мочевой кислоты 439: основа — белая рыба (минтай, треска, хек), она дешёвая и низкопуриновая. Жирная рыба — раз в неделю, не чаще: пользы по омега-3 хватит, а пуринов она даёт заметно больше. Если жирная рыба не идёт, омега-3 добираются ложкой льняного масла в салат и горстью грецких орехов.",
@@ -3927,7 +3904,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 18:20";   // подставляется при публикации
+const BUILD="19.09 18:40";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4081,159 +4058,164 @@ function kpiLive(d){
   const md=out.find(k=>k.auto==="meds"); if(md) medsKpi(d,md);
   return out;
 }
-function progDays(){                       // текущая неделя трекера: воскресенье → суббота
-  const t=new Date(), start=new Date(t);
-  start.setDate(t.getDate()-t.getDay());   // getDay(): 0 — воскресенье
-  const out=[];
-  for(let i=0;i<7;i++){ const x=new Date(start); x.setDate(start.getDate()+i); out.push(x.toISOString().slice(0,10)) }
-  return out;
-}
-// день засчитан, если попал в коридор вокруг цели: ok — норма, near — почти, low — далеко
-function dayMark(x,v){
-  if(v==null) return null;
-  if(x.band){                                        // коридор в обе стороны (калории)
-    const dv=Math.abs(v-x.goal)/x.goal;
-    return dv<=x.band?"ok":dv<=x.band*2?"near":"low";
-  }
-  const r=v/x.goal;                                  // чем больше, тем лучше (белок)
-  return r>=1?"ok":r>=0.8?"near":"low";
-}
+// Прогресс по неделям. Неделя трекера — воскресенье → суббота
+function wkStart(iso){ const x=new Date(iso+"T12:00:00"); x.setDate(x.getDate()-x.getDay()); return x.toISOString().slice(0,10) }
+function wkDays(s){ const out=[]; for(let i=0;i<7;i++){ const x=new Date(s+"T12:00:00"); x.setDate(x.getDate()+i); out.push(x.toISOString().slice(0,10)) } return out }
 function progItems(d){
   const P=(d.nutrition&&d.nutrition.prog)||null;
   if(!P) return [];
   const F=nutLS("weight",[]), last=F[F.length-1];
-  const week=progDays();
   return P.items.map(it=>{
     const x=Object.assign({},it);
     if(x.live==="weight" && last && last.v) x.v=last.v;      // вес всегда свежий
-    if(x.kind==="day"){
-      const map={}; (x.days||[]).forEach(r=>map[r[0]]=r[1]);
-      x.cells=week.map(dd=>({d:dd,v:map[dd]==null?null:map[dd],m:dayMark(x,map[dd])}));
-      const today=new Date().toISOString().slice(0,10);
-      x.cells.forEach(c=>{ if(c.d>today) c.future=1 });
-      const have=x.cells.filter(c=>c.v!=null);
-      x.hit=x.cells.filter(c=>c.m==="ok").length;
-      x.avg=have.length?Math.round(have.reduce((a,c)=>a+c.v,0)/have.length):null;
-      x.have=have.length;
-      // вклад в общий счёт — среднее по дням, а не одна цифра
-      x.pct=have.length?Math.max(0,Math.min(1,have.reduce((a,c)=>a+(x.band?1-Math.min(1,Math.abs(c.v-x.goal)/x.goal/(x.band*2)):Math.min(1,c.v/x.goal)),0)/have.length)):0;
-      return x;
-    }
     const span=x.base-x.goal;
     let r = span===0 ? 1 : (x.base-x.v)/span;                 // работает в обе стороны
     x.pct=Math.max(0,Math.min(1,r));
     return x;
   });
 }
-// ── Достижения: три ступени у каждого, из ступеней складываются очки и уровень
-const TIER=[{n:"бронза",c:"#a97142",p:10},{n:"серебро",c:"#8d99a6",p:25},{n:"золото",c:"#c9a227",p:50}];
-const LEVELS=[[0,"Новичок"],[50,"Втянулся"],[120,"В ритме"],[250,"Держит систему"],[450,"Мастер режима"],[700,"Легенда холодильника"]];
-function achList(d){
-  const P=(d.nutrition&&d.nutrition.prog)||{};
-  const F=nutLS("weight",[]), last=F[F.length-1], w0=(P.items||[]).find(x=>x.live==="weight");
-  const dayHits=key=>{ const it=(P.items||[]).find(x=>x.n===key); if(!it) return 0;
-    return (it.days||[]).filter(r=>dayMark(it,r[1])==="ok").length };
-  const auto={
-    meas:F.length,
-    protDays:dayHits("Белок"),
-    kcalDays:dayHits("Калории"),
-    diary:((P.items||[]).find(x=>x.n==="Калории")||{days:[]}).days.length,
-    lost:(last&&w0)?Math.max(0,Math.round((w0.base-last.v)*10)/10):0
-  };
-  return (P.ach||[]).map(a=>{
-    const x=Object.assign({},a);
-    if(x.auto) x.v=auto[x.auto]||0;
-    x.tier=x.t.filter(t=>x.v>=t).length;                 // 0 — ещё нет, 3 — золото
-    x.next=x.tier<3?x.t[x.tier]:null;
-    x.pct=x.next?Math.min(1,x.v/x.next):1;
-    x.pts=x.tier?TIER[x.tier-1].p:0;
-    return x;
+// БЖУ по дням: столбики в % от нормы. Белок — чем ближе к норме и выше, тем лучше;
+// жиры — лучше не выше нормы; углеводы — коридор вокруг нормы
+const MAC=[["p","Белок","#3b7dd8"],["f","Жиры","#e0892b"],["c","Углеводы","#2e9d68"]];
+let progWk=null;                                   // начало выбранной недели; null — последняя, где есть записи
+function macGrade(k,pct){
+  if(k==="p") return pct>=95?"ok":pct>=80?"warn":"bad";
+  if(k==="f") return pct<=105?"ok":pct<=125?"warn":"bad";
+  if(k==="c") return pct>=85&&pct<=115?"ok":pct>=70&&pct<=130?"warn":"bad";
+  if(k==="k") return Math.abs(pct-100)<=10?"ok":Math.abs(pct-100)<=20?"warn":"bad";
+  return "ok";
+}
+function progMacros(P){
+  const M=P.macros; if(!M||!(M.days||[]).length) return "";
+  const N=M.norm, map={};
+  M.days.forEach(r=>map[r[0]]={k:r[1],p:r[2],f:r[3],c:r[4],s:r[5]});
+  const weeks=[...new Set(M.days.map(r=>wkStart(r[0])))].sort();
+  const cw=weeks.includes(progWk)?progWk:weeks[weeks.length-1], wi=weeks.indexOf(cw);
+  const days=wkDays(cw), have=days.filter(x=>map[x]);
+  const prev=wi>0?wkDays(weeks[wi-1]).filter(x=>map[x]):[];
+  const avg=(ds,k)=>{ const v=ds.map(x=>map[x][k]).filter(v=>v!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null };
+  const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
+  const DOW=["вс","пн","вт","ср","чт","пт","сб"];
+  // график
+  const W=680,H=230,L=36,R=6,T=10,B=46, iw=W-L-R, ih=H-T-B;
+  let mx=150; days.forEach(x=>{ if(map[x]) MAC.forEach(([k])=>{ mx=Math.max(mx,map[x][k]/N[k]*100) }) });
+  mx=Math.ceil(mx/50)*50;
+  const y=v=>T+ih*(1-Math.min(v,mx)/mx), gw=iw/7, bw=gw*0.22;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" class="macchart" role="img" aria-label="Белки, жиры и углеводы по дням в процентах от нормы">`;
+  svg+=`<rect x="${L}" y="${y(110)}" width="${iw}" height="${y(90)-y(110)}" fill="var(--ok)" opacity=".09"/>`;
+  for(let g=0; g<=mx; g+=50){
+    const is100=g===100;
+    svg+=`<line x1="${L}" x2="${W-R}" y1="${y(g)}" y2="${y(g)}" stroke="${is100?"var(--ink)":"var(--line)"}" stroke-width="${is100?1.2:1}"${is100?' stroke-dasharray="5 4"':""}/>
+      <text x="${L-5}" y="${y(g)+4}" font-size="10.5" fill="var(--muted)" text-anchor="end">${g}%</text>`;
+  }
+  days.forEach((dd,i)=>{
+    const gx=L+gw*i, r=map[dd], dt=new Date(dd+"T12:00:00");
+    if(r) MAC.forEach(([k,n,col],j)=>{
+      const pct=Math.round(r[k]/N[k]*100), bx=gx+gw/2-bw*1.5+bw*j+0.5;
+      svg+=`<rect x="${bx.toFixed(1)}" y="${y(pct).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y(0)-y(pct)).toFixed(1)}" rx="2" fill="${col}"><title>${ru(dd)} · ${n}: ${r[k]} г из ${N[k]} — ${pct}%</title></rect>`;
+    });
+    else svg+=`<text x="${gx+gw/2}" y="${y(0)-8}" font-size="10.5" fill="var(--muted)" text-anchor="middle">нет записи</text>`;
+    const kc=r?macGrade("k",r.k/N.k*100):null;
+    svg+=`<text x="${gx+gw/2}" y="${H-B+16}" font-size="11.5" fill="var(--ink)" text-anchor="middle">${DOW[dt.getDay()]} ${dt.getDate()}</text>`;
+    if(r) svg+=`<text x="${gx+gw/2}" y="${H-B+31}" font-size="10.5" fill="var(--${kc==="ok"?"muted":kc})" text-anchor="middle">${fmt(r.k)} ккал${r.s!=null&&r.s>N.s?` · 🧂${fmt(r.s)}`:""}</text>`;
   });
+  svg+=`</svg>`;
+  // недельные средние и сдвиг к прошлой неделе
+  const tiles=[["k","Калории",N.k,"ккал"],...MAC.map(([k,n])=>[k,n,N[k],"г"]),["s","Соль",N.s,"г"]].map(([k,n,norm,u])=>{
+    const a=avg(have,k); if(a==null) return "";
+    const pa=prev.length?avg(prev,k):null, pct=a/norm*100;
+    const st=k==="s"?(a<=norm?"ok":a<=norm*1.4?"warn":"bad"):macGrade(k,pct);
+    const hit=k==="s"?have.filter(x=>map[x].s!=null&&map[x].s<=norm).length
+      : have.filter(x=>macGrade(k,map[x][k]/norm*100)==="ok").length;
+    const dl=pa==null?"":(()=>{ const dv=Math.round(a-pa); return dv===0?"как на прошлой":`${dv>0?"+":"−"}${fmt(Math.abs(k==="s"?Math.round((a-pa)*10)/10:dv))} к прошлой` })();
+    const extra=k==="f"&&avg(have,"k")?` · ${Math.round(a*9/avg(have,"k")*100)}% калорий`:"";
+    const col=(MAC.find(m=>m[0]===k)||[])[2];
+    return `<div class="mt s-${st}">
+      <div class="mt-n">${col?`<i style="background:${col}"></i>`:""}${n}</div>
+      <div class="mt-v">${fmt(k==="s"?Math.round(a*10)/10:Math.round(a))} <small>${u} · ${Math.round(pct)}% нормы</small></div>
+      <div class="mt-h">${k==="s"?"норма до":"норма"} ${fmt(norm)} ${u} · в норме ${hit} из ${have.length} дн.${extra}${dl?`<br>${dl}`:""}</div>
+    </div>`;
+  }).join("");
+  const nav=(to,lab)=>to?`<button class="wkbtn" data-progwk="${to}">${lab}</button>`:`<button class="wkbtn" disabled>${lab}</button>`;
+  return `<div class="progsec">
+    <div class="progsec-h"><b>Питание по дням</b>
+      <span class="wknav">${nav(weeks[wi-1],"‹")}<span>${ru(days[0])} — ${ru(days[6])}</span>${nav(weeks[wi+1],"›")}</span></div>
+    <div class="macleg">${MAC.map(([k,n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join("")}<span class="muted">пунктир — 100% нормы, зелёная полоса — ±10%</span></div>
+    ${svg}
+    <div class="mtiles">${tiles}</div>
+  </div>`;
 }
-function achScore(d){
-  const l=achList(d), pts=l.reduce((a,x)=>a+x.pts,0);
-  let li=0; LEVELS.forEach((L,i)=>{ if(pts>=L[0]) li=i });
-  const nextL=LEVELS[li+1];
-  return {list:l,pts,lvl:li+1,name:LEVELS[li][1],need:nextL?nextL[0]-pts:0,nextAt:nextL?nextL[0]:null,
-          got:l.filter(x=>x.tier).length, gold:l.filter(x=>x.tier===3).length,
-          silver:l.filter(x=>x.tier===2).length, bronze:l.filter(x=>x.tier===1).length};
-}
-function achChip(x){
-  const t=x.tier?TIER[x.tier-1]:null;
-  return `<span class="bdg${x.tier?" on":""}"${t?` style="border-color:${t.c};background:color-mix(in srgb,${t.c} 12%,transparent)"`:""}
-    title="${esc(x.n)} — ${esc(x.how)}. ${x.tier?`Есть ${t.n}`:"пока нет"}${x.next?`, следующая ступень ${x.next}`:""}">${x.i} ${esc(x.n)}${
-    t?` <b style="color:${t.c}">${t.n}</b>`:""}</span>`;
-}
-function achCard(x){
-  const t=x.tier?TIER[x.tier-1]:null;
-  const fm=z=>String(Math.round(z*10)/10).replace(".",",");
-  return `<div class="ach">
-    <div class="ach-i">${x.i}</div>
-    <div class="ach-b">
-      <div class="ach-n"><b>${esc(x.n)}</b>${t?`<span class="ach-t" style="color:${t.c};border-color:${t.c}">${t.n}</span>`:`<span class="ach-t muted">нет</span>`}</div>
-      <div class="ach-h">${esc(x.how)}</div>
-      <div class="pbar"><span style="width:${Math.round(x.pct*100)}%;background:${t?t.c:"var(--muted)"}"></span></div>
-      <div class="ach-p">${fm(x.v)} ${esc(x.u||"")}${x.next?` · до «${TIER[x.tier].n}» ${fm(x.next-x.v)}`:" · максимум взят"}
-        <span class="muted"> · ступени ${x.t.map(z=>fm(z)).join(" / ")}</span></div>
-    </div></div>`;
-}
-function achAll(d){
-  const S=achScore(d);
-  const got=S.list.filter(x=>x.tier).sort((a,b)=>b.tier-a.tier);
-  const rest=S.list.filter(x=>!x.tier).sort((a,b)=>b.pct-a.pct);
-  return `<div class="modal-in">
-    <div class="ach-head">
-      <div class="ach-lvl">${S.lvl}</div>
-      <div>
-        <div class="ach-lname">${esc(S.name)} · уровень ${S.lvl}</div>
-        <div class="muted">${S.pts} очков${S.nextAt?` · до ${S.lvl+1} уровня ещё ${S.need}`:" · максимум"}</div>
-        <div class="muted" style="margin-top:4px">🥇 ${S.gold} · 🥈 ${S.silver} · 🥉 ${S.bronze} · всего открыто ${S.got} из ${S.list.length}</div>
-      </div>
-    </div>
-    <div class="muted" style="font-size:12.5px;margin:10px 0">Очки: бронза 10, серебро 25, золото 50. Считается по накопленным данным — дневник, замеры, трекер.</div>
-    ${got.length?`<div class="ach-t2">Открыто — ${got.length}</div><div class="ach-g">${got.map(achCard).join("")}</div>`:""}
-    ${rest.length?`<div class="ach-t2">В работе — ${rest.length}</div><div class="ach-g">${rest.map(achCard).join("")}</div>`:""}
+// Сон по неделям: четыре ряда на общей оси недель — балл, засыпание, длительность, регулярность
+function progSleep(P){
+  const S=P.sleep; if(!S||!(S.weeks||[]).length) return "";
+  const G=S.goal, W=S.weeks.map(r=>({d:r[0],sc:r[1],on:r[2],du:r[3],ri:r[4],ro:r[5],
+    rg:(r[4]==null&&r[5]==null)?null:Math.min(...[r[4],r[5]].filter(v=>v!=null))}));
+  const hm=m=>m==null?"—":`${String(Math.floor(((m%1440)+1440)%1440/60)).padStart(2,"0")}:${String(((m%60)+60)%60).padStart(2,"0")}`;
+  const dur=m=>m==null?"—":`${Math.floor(m/60)} ч ${String(m%60).padStart(2,"0")}`;
+  const MON=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+  const wk=d=>{ const a=new Date(d+"T12:00:00"), b=new Date(a); b.setDate(a.getDate()+6);
+    return a.getMonth()===b.getMonth()?`${a.getDate()}–${b.getDate()} ${MON[b.getMonth()]}`:`${a.getDate()} ${MON[a.getMonth()]} – ${b.getDate()} ${MON[b.getMonth()]}`; };
+  const rows=[
+    {k:"sc",n:"Балл сна",lo:75,hi:90,ref:G.score,refl:`цель ${G.score}`,fmt:v=>v,
+      st:v=>v>=G.score?"ok":v>=81?"warn":"bad"},
+    {k:"on",n:"Засыпание",lo:0,hi:150,ref:null,refl:"ниже — раньше",fmt:hm,inv:1,
+      st:v=>v<=30?"ok":v<=75?"warn":"bad"},
+    {k:"du",n:"Ночной сон",lo:300,hi:540,ref:G.dur[0],refl:"от 7 ч",fmt:dur,
+      st:v=>v>=G.dur[0]?"ok":v>=390?"warn":"bad"},
+    {k:"rg",n:"Регулярность",lo:50,hi:90,ref:G.reg,refl:`норма от ${G.reg}`,fmt:v=>v,
+      st:v=>v>=G.reg?"ok":v>=65?"warn":"bad"}
+  ];
+  const Wd=680, L=92, R=6, rh=46, gap=10, T=4, B=22, H=T+rows.length*(rh+gap)+B, iw=Wd-L-R, cw=iw/W.length, bw=Math.max(4,cw*0.62);
+  let svg=`<svg viewBox="0 0 ${Wd} ${H}" class="macchart" role="img" aria-label="Сон по неделям: балл, засыпание, длительность, регулярность">`;
+  rows.forEach((r,ri)=>{
+    const y0=T+ri*(rh+gap), yb=y0+rh;
+    const yv=v=>{ const c=Math.max(r.lo,Math.min(r.hi,v)); return r.inv? y0+rh*(c-r.lo)/(r.hi-r.lo) : yb-rh*(c-r.lo)/(r.hi-r.lo) };
+    svg+=`<text x="0" y="${y0+16}" font-size="12" font-weight="600" fill="var(--ink)">${r.n}</text>
+      <text x="0" y="${y0+30}" font-size="10" fill="var(--muted)">${r.refl}</text>
+      <line x1="${L}" x2="${Wd-R}" y1="${r.inv?y0:yb}" y2="${r.inv?y0:yb}" stroke="var(--line)"/>`;
+    if(r.ref!=null) svg+=`<line x1="${L}" x2="${Wd-R}" y1="${yv(r.ref)}" y2="${yv(r.ref)}" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 4" opacity=".6"/>`;
+    W.forEach((w,i)=>{
+      const v=w[r.k], cx=L+cw*i+cw/2;
+      if(v==null){ svg+=`<text x="${cx}" y="${yb-3}" font-size="9" fill="var(--muted)" text-anchor="middle">·</text>`; return; }
+      const y1=yv(v), top=r.inv?y0:Math.min(y1,yb), h=r.inv?Math.max(2,y1-y0):Math.max(2,yb-y1);
+      const extra=r.k==="rg"?` (засыпание ${w.ri??"—"}, пробуждение ${w.ro??"—"})`:"";
+      svg+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--${r.st(v)})" opacity="${i===W.length-1?1:.72}"><title>${wk(w.d)} · ${r.n}: ${r.fmt(v)}${extra}</title></rect>`;
+    });
+  });
+  let pm=-1;
+  W.forEach((w,i)=>{ const m=new Date(w.d+"T12:00:00").getMonth(); if(m!==pm){ pm=m;
+    svg+=`<text x="${L+cw*i+2}" y="${H-6}" font-size="10.5" fill="var(--muted)">${MON[m]}</text>`; } });
+  svg+=`</svg>`;
+  const a=W[W.length-1], b=W[W.length-2];
+  const tile=(r,v,pv,delta)=>`<div class="mt s-${v==null?"ok":r.st(v)}"><div class="mt-n">${r.n}</div>
+    <div class="mt-v">${r.fmt(v)}</div><div class="mt-h">${pv==null?"":`неделей раньше ${r.fmt(pv)}${delta?` · ${delta}`:""}`}</div></div>`;
+  const dm=(x,y,good)=>{ if(x==null||y==null) return ""; const d=x-y; if(!d) return "без изменений";
+    return `<span style="color:var(--${good(d)?"ok":"bad"})">${d>0?"+":"−"}${Math.abs(d)}${good===undefined?"":""}</span>`; };
+  const tiles=[
+    tile(rows[0],a.sc,b&&b.sc,dm(a.sc,b&&b.sc,d=>d>0)),
+    tile(rows[1],a.on,b&&b.on,a.on!=null&&b&&b.on!=null&&a.on!==b.on?`<span style="color:var(--${a.on<b.on?"ok":"bad"})">на ${Math.abs(a.on-b.on)} мин ${a.on<b.on?"раньше":"позже"}</span>`:""),
+    tile(rows[2],a.du,b&&b.du,a.du!=null&&b&&b.du!=null&&a.du!==b.du?`<span style="color:var(--${a.du>b.du?"ok":"bad"})">${a.du>b.du?"+":"−"}${Math.abs(a.du-b.du)} мин</span>`:""),
+    tile(rows[3],a.rg,b&&b.rg,a.ri!=null||a.ro!=null?`засыпание ${a.ri??"—"}, пробуждение ${a.ro??"—"}`:"")
+  ].join("");
+  const hit=W.filter(w=>w.sc>=G.score).length, early=W.filter(w=>w.on!=null&&w.on<=G.onset).length;
+  return `<div class="progsec">
+    <div class="progsec-h"><b>Сон по неделям</b><span class="muted" style="font-size:12px">последняя — ${wk(a.d)} · ${W.length} недель с марта</span></div>
+    ${svg}
+    <div class="mtiles">${tiles}</div>
+    <div class="muted" style="font-size:11.5px;margin-top:6px">За ${W.length} недель: балл ${G.score}+ — ${hit} раз, засыпание до полуночи — ${early} раз. Точка вместо столбика — трекер это не показал.</div>
   </div>`;
 }
 function progForm(d){
+  const P=(d.nutrition&&d.nutrition.prog)||null;
+  if(!P) return "";
   const items=progItems(d);
-  if(!items.length) return "";
-  const P=d.nutrition.prog;
-  const score=Math.round(items.reduce((a,x)=>a+x.pct,0)/items.length*100);
-  const rank = score>=80?["В целевом коридоре","ok"] : score>=60?["На графике","ok"] : score>=40?["Набираю ход","warn"] : ["Разгон","warn"];
-  const RAD=52, C=2*Math.PI*RAD, off=C*(1-score/100);
-  const first=progDays()[0], lastd=progDays()[6];
-  return `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Прогресс</div>
-  <div class="muted" style="font-size:11.5px;margin-bottom:9px">текущая неделя ${ru(first)} — ${ru(lastd)}, счёт по дням обнуляется каждое воскресенье · недельные средние — за ${esc(P.week)}</div>
-  <div class="proghead">
-    <svg viewBox="0 0 130 130" class="progring" aria-label="общий счёт ${score} из 100">
-      <circle cx="65" cy="65" r="${RAD}" fill="none" stroke="var(--line)" stroke-width="11"/>
-      <circle cx="65" cy="65" r="${RAD}" fill="none" stroke="var(--${rank[1]})" stroke-width="11" stroke-linecap="round"
-              stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 65 65)"/>
-      <text x="65" y="61" text-anchor="middle" font-size="30" font-weight="700" fill="var(--ink)">${score}</text>
-      <text x="65" y="80" text-anchor="middle" font-size="11" fill="var(--muted)">из 100</text>
-    </svg>
-    <div class="progrank">
-      <div class="rk" style="color:var(--${rank[1]})">${esc(rank[0])}</div>
-      <div class="muted" style="font-size:12.5px;line-height:1.4">${esc(P.note||"")}</div>
-      ${P.streak?`<div class="streak">🔥 ${esc(P.streak)}</div>`:""}
-    </div>
-  </div>
+  const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
+  return `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Прогресс по неделям</div>
+  <div class="muted" style="font-size:11.5px;margin-bottom:11px">${esc(P.note||"")}</div>
+  ${progMacros(P)}
+  ${progSleep(P)}
+  ${items.length?`<div class="progsec"><div class="progsec-h"><b>Движение и вес</b><span class="muted" style="font-size:12px">за ${esc(P.week)} · к прошлой неделе</span></div>
   <div class="progbars">${items.map(x=>{
-    const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
-    const DOW=["вс","пн","вт","ср","чт","пт","сб"];
-    if(x.kind==="day"){
-      const cells=x.cells.map(c=>{
-        const cl=c.m?("m-"+c.m):(c.future?"m-fut":"m-none");
-        const t=c.v==null?`${ru(c.d)} — ${c.future?"ещё не наступил":"нет записи"}`:`${ru(c.d)} — ${fmt(c.v)} ${x.u||""}`;
-        return `<span class="pday ${cl}" title="${esc(t)}"><i>${DOW[new Date(c.d).getDay()]}</i></span>`;
-      }).join("");
-      return `<div class="progrow day">
-        <div class="pl"><b>${esc(x.n)}</b><i>цель ${fmt(x.goal)} ${esc(x.u||"")} в день${x.avg!=null?` · в среднем ${fmt(x.avg)}`:""}</i></div>
-        <div class="pdays">${cells}</div>
-        <div class="pv">${x.hit}<small> / 7 дней в норме</small></div>
-      </div>`;
-    }
     const p=Math.round(x.pct*100);
     const col=p>=60?"ok":p>=30?"warn":"bad";
     const arrow = x.prev==null?"" : (x.lo ? (x.v<x.prev?"↓":x.v>x.prev?"↑":"→") : (x.v>x.prev?"↑":x.v<x.prev?"↓":"→"));
@@ -4241,18 +4223,9 @@ function progForm(d){
     return `<div class="progrow">
       <div class="pl"><b>${esc(x.n)}</b><i>${esc(x.hint||"")}</i></div>
       <div class="pbar"><span style="width:${p}%;background:var(--${col})"></span></div>
-      <div class="pv">${esc(fmt(x.v))}<small> / ${esc(fmt(x.goal))} ${esc(x.u||"")}</small>
+      <div class="pv">${x.prev!=null?`<small>${esc(fmt(x.prev))} → </small>`:""}${esc(fmt(x.v))}<small> / ${esc(fmt(x.goal))} ${esc(x.u||"")}</small>
         ${arrow?`<em style="color:var(--${good?"ok":"bad"})">${arrow}</em>`:""}</div>
-    </div>`}).join("")}</div>
-  ${(()=>{ const S=achScore(d); if(!S.list.length) return "";
-    const near=S.list.filter(x=>x.tier<3).sort((a,b)=>b.pct-a.pct).slice(0,2);
-    const top=S.list.filter(x=>x.tier).sort((a,b)=>b.tier-a.tier).slice(0,3);
-    return `<div class="badges">
-      <span class="lvl-chip">Уровень ${S.lvl} · ${esc(S.name)} · ${S.pts} очков</span>
-      ${top.map(achChip).join("")}
-      ${near.map(achChip).join("")}
-      <button class="gobtn ach-more" id="achAll">Посмотреть все достижения →</button>
-    </div>`})()}`;
+    </div>`}).join("")}</div></div>`:""}`;
 }
 // Меню недели: если его правили руками, берём правленую версию
 const MEALS=["Завтрак","Обед","Перекус","Ужин"];
@@ -6152,11 +6125,7 @@ document.addEventListener("click",e=>{
   const ib=e.target.closest("[data-idea]");
   if(ib){ ideasToggle(ib.dataset.idea); ideasModal(); render(); return }
 
-  if(e.target.closest("#achAll")){
-    modal.innerHTML=`<div class="mbox"><button class="mclose" data-close>✕</button>
-      <h2>Достижения</h2>${achAll(DATA[cur])}</div>`;
-    modal.classList.add("on"); return;
-  }
+  const pw=e.target.closest("[data-progwk]"); if(pw){ progWk=pw.dataset.progwk; render(); return; }
 
   const ins=e.target.closest("[data-ins]");
   if(ins){ insSel = insSel===ins.dataset.ins ? null : ins.dataset.ins; render(); return }
