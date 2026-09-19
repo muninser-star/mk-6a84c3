@@ -13,6 +13,19 @@ const sc = h.match(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/);
 if (!sc) bad.push("не найден блок <script>");
 else { try { new Function(sc[1]); } catch (e) { bad.push("синтаксис скрипта: " + e.message); } }
 
+// 1б. Скобки в стилях сходятся. Незакрытый блок молча глотает все правила ниже себя:
+// так 19.09.2026 форма замера веса осталась без стилей
+const st = h.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+if (st) {
+  let depth = 0, line = 1, openAt = [];
+  for (const c of st[1].replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, " "))) {
+    if (c === "\n") line++;
+    if (c === "{") { depth++; openAt.push(line); }
+    if (c === "}") { depth--; openAt.pop(); if (depth < 0) { bad.push(`стили: лишняя «}» в строке ${line} блока <style>`); depth = 0; } }
+  }
+  if (depth > 0) bad.push(`стили: не закрыта «{» из строки ${openAt[openAt.length - 1]} блока <style> — всё ниже не применяется`);
+}
+
 // 2. DATA парсится целиком
 const dm = h.match(/const DATA = \{[\s\S]*?\n\};/);
 if (!dm) bad.push("не найден блок DATA");
