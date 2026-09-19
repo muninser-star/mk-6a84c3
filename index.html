@@ -320,6 +320,9 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .macleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-bottom:4px}
 .macleg i,.mt-n i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .macchart{width:100%;height:auto;display:block}
+.recs{margin:4px 0 0;padding-left:20px;font-size:13.5px;line-height:1.45}
+.recs li{margin-bottom:8px}
+.recs li div{font-size:12.5px;margin-top:2px}
 .rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
 .ringbox{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px}
 .ring2{width:112px;height:112px;flex:none}
@@ -2053,7 +2056,6 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
    ["Боль в груди, одышка в покое, обморок","Скорая. По ЭхоКГ и трём ЭКГ структурных причин нет, но правило общее"]],
   soon:[
     {when:"эта неделя",what:"Дневник давления, 7 дней подряд",why:"Тонометр дома есть. Утром и вечером, сидя, после 5 минут покоя, манжета на уровне сердца, два замера с интервалом в минуту — записывать второй. Начат 22.08.2026 вечерним замером 133/78 и заглох на первом дне — перезапустить. 04.09.2026 разовый замер 133/84: второй выход систолического за 129, диастолическое впервые на верхней границе. Домашняя норма строже офисной: разговор про СМАД начинается со средней ≥ 135/85 за серию. Повод — гипертония у матери с дебютом «со школы» и ОТС 0,45 на ЭхоКГ",sys:"heart",st:"warn"},
-    {when:"до 13.09.2026",what:"Решить по каплям",why:"Курс Оптинола заканчивается — продлевать или нет. Лютеин Форте Денис не принимает (02.09.2026), по нему решать нечего",sys:"eye",st:"warn"},
     {when:"декабрь 2026",what:"УЗ-контроль брюшной полости",why:"Назначен по гепатозу",sys:"liver",st:"warn"}
   ],
   own:[
@@ -2065,8 +2067,8 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
   ],
   meds:[
     {n:"Тридерм",from:"2026-09-02",to:"2026-09-09",how:"Тонким слоем на поражённую кожу. Курс неделя — решение Дениса 02.09.2026, врач диагноз не поставил",till:"09.09.2026",why:"Бетаметазон + гентамицин + клотримазол при баланопостите. Дольше недели не продлевать: сильный стероид истончает кожу этой зоны. Тем же составом уже лечились 01.10.2025 — вернулось"},
-    {n:"Цинковая паста 25 %",plan:"2026-09-09",how:"Тонким слоем на сухую кожу, обязательно на ночь. Именно паста, не мазь",till:"по состоянию",why:"Подсушивает и защищает. Работает против влажности в складке — главного фона при этом течении. Начинается после курса Тридерма, чтобы было видно, что именно сработало"},
-    {n:"Оптинол Глубокое увлажнение",from:"2026-08-20",to:"2026-09-19",how:"По 1 капле 3 раза в день в оба глаза. ⚠️ Начал только 20.08.2026 — через 6 дней после назначения",till:"13.09.2026 по бумаге; если курс месячный, от фактического старта это 19.09.2026 — уточнить",why:"Гиалуронат натрия. Про комфорт и слёзную плёнку, на сетчатку не влияет"}
+    {n:"Цинковая паста 25 %",from:"2026-09-18",how:"Тонким слоем на сухую кожу, обязательно на ночь. Именно паста, не мазь",till:"по состоянию",why:"Подсушивает и защищает. Работает против влажности в складке — главного фона при этом течении. Начинается после курса Тридерма, чтобы было видно, что именно сработало"},
+    {n:"Оптинол Глубокое увлажнение",from:"2026-08-20",to:"2026-09-19",stopped:"2026-09-19",how:"По 1 капле 3 раза в день в оба глаза. ⚠️ Начал только 20.08.2026 — через 6 дней после назначения",till:"закончен 19.09.2026, не продлевал — решение Дениса",why:"Гиалуронат натрия. Про комфорт и слёзную плёнку, на сетчатку не влияет"}
   ],
   nutrition:{
     homeGym:{
@@ -3065,6 +3067,7 @@ function medStart(m){
 function medActive(m){
   const a=medStart(m); if(!a) return false;
   const t=new Date().toISOString().slice(0,10);
+  if(m.stopped && m.stopped<=t) return false;            // прекращён решением — с этого дня не идёт
   return a<=t && (!m.to || m.to>=t);
 }
 // Плитка «Принимает» собирается из d.meds, руками не пишется: ручной текст отставал от таблицы
@@ -3280,9 +3283,6 @@ function insightsGaps(d){
     const miss=draws[big[1]].filter(t=>!cur.has(t));
     if(miss.length) g.push(`В заборе ${ru(big[0])} нет ${miss.length} показателей, которые были ${ru(big[1])}: <b>${esc(miss.slice(0,4).join(", "))}</b>${miss.length>4?" и др.":""}`);
   }
-  // открытые вопросы, которые сам же файл считает недостающими
-  ((d.attention||[]).filter(a=>a.st==="bad")).slice(0,3).forEach(a=>
-    g.push(`${esc(a.t)}${a.d?` <span class="muted">— ${esc(a.d)}</span>`:""}`));
   if(!g.length) return "";
   return `<div class="card"><h2>📌 Что стоит проверить</h2>
     <div class="muted" style="margin:-6px 0 10px">Пробелы в данных, а не диагнозы. Список собирается сам.</div>
@@ -3908,7 +3908,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 19:10";   // подставляется при публикации
+const BUILD="19.09 19:18";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4269,6 +4269,72 @@ function progRings(d,P){
   return out.length?`<div class="progsec"><div class="progsec-h"><b>Вес и шаги</b></div>
     <div class="rings">${out.join("")}</div></div>`:"";
 }
+// Что сделать на этой неделе: правила по свежим метрикам прогресса. Пересчитывается само,
+// когда в дневник, файл сна или замеры приходят новые цифры. Порядок — от самого большого отклонения
+function progRecs(d,P){
+  const out=[], fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
+  const add=(w,t,why,how)=>out.push({w,t,why,how});
+  // питание: последняя неделя трекера, где есть записи
+  const M=P.macros;
+  if(M&&(M.days||[]).length){
+    const N=M.norm, lastW=wkStart(M.days[M.days.length-1][0]);
+    const days=M.days.filter(r=>wkStart(r[0])===lastW);
+    const av=i=>{ const v=days.map(r=>r[i]).filter(v=>v!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null };
+    const k=av(1),p=av(2),f=av(3),c=av(4),sa=av(5), n=days.length, per=`за ${n} дн. с ${ru(lastW)}`;
+    if(p!=null&&p<N.p*0.95) add(N.p-p,"Добрать белок",
+      `${Math.round(p)} г в день при норме ${N.p} (${per}) — не хватает около ${Math.round(N.p-p)} г`,
+      "Проще всего в завтрак и перекус: творог 150 г или греческий йогурт — +25 г, два яйца — +12 г. Белок держит сытость дольше всего");
+    if(f!=null&&f>N.f*1.1) add((f-N.f)*1.2,"Убавить жиры",
+      `${Math.round(f)} г в день при норме ${N.f}${k?` — ${Math.round(f*9/k*100)}% калорий`:""} (${per})`,
+      "Масло в готовку — отмерять ложкой, а не лить. Сыр и соусы на майонезе — в свою тарелку понемногу. Это освобождает место углеводам и белку без урезания порции");
+    if(k!=null&&k>N.k*1.1) add((k-N.k)/20,"Калории выше коридора",
+      `${fmt(Math.round(k))} ккал в день при норме ${fmt(N.k)} ±10% (${per})`,
+      "Сначала смотреть на жиры и напитки — там калории прячутся легче всего. Меню не урезать, план держит 2 300");
+    if(k!=null&&k<N.k*0.85) add((N.k-k)/20,"Калорий слишком мало",
+      `${fmt(Math.round(k))} ккал в день при норме ${fmt(N.k)} (${per})`,
+      "Глубокий недобор при жировой болезни печени вреден: вес уходит мышцами. Добрать до коридора — перекусом с белком");
+    if(sa!=null&&sa>N.s) add((sa-N.s)*3,"Меньше соли",
+      `${fmt(Math.round(sa*10)/10)} г в день при норме до ${N.s} (${per})`,
+      "Основная соль — не из солонки, а из хлеба, сыра, колбасы, соусов и готовой еды. Солить в тарелке, а не в кастрюле. Для давления это рычаг сильнее большинства");
+  }
+  // сон: последняя неделя
+  const S=P.sleep, sw=S&&(S.weeks||[]).length?S.weeks[S.weeks.length-1]:null;
+  if(sw){
+    const [d0,sc,on,du,ri,ro]=sw, hm=m=>`${String(Math.floor((m+1440)%1440/60)).padStart(2,"0")}:${String((m+1440)%60).padStart(2,"0")}`;
+    if(on!=null&&on>S.goal.onset) add(on/3,"Засыпать раньше",
+      `в среднем засыпал в ${hm(on)} при цели до 00:00 (неделя с ${ru(d0)})`,
+      `Сдвигать по 15 минут в неделю, а не рывком: на этой неделе — отбой к ${hm(Math.max(0,on-15))}. Экран и работа — за час до сна`);
+    const rg=[ri,ro].filter(v=>v!=null);
+    if(rg.length&&Math.min(...rg)<S.goal.reg) add((S.goal.reg-Math.min(...rg))*2,"Ровнее режим сна",
+      `регулярность ${rg.join(" / ")} при норме от ${S.goal.reg}`,
+      "Вставать в одно время и в выходные — плюс-минус час. Это держит режим сильнее, чем время отбоя");
+    if(du!=null&&du<S.goal.dur[0]) add((S.goal.dur[0]-du)/2,"Спать дольше",
+      `в среднем ${Math.floor(du/60)} ч ${String(du%60).padStart(2,"0")} за ночь при цели от 7 ч`,
+      "Добирать ранним отбоем, а не поздним подъёмом");
+  }
+  // вес к плану
+  const F=nutLS("weight",[]), lw=F[F.length-1], wi=(P.items||[]).find(x=>x.live==="weight");
+  const wv=lw&&lw.v?lw.v:(wi&&wi.v), wd=lw&&lw.v?lw.d:(wi&&wi.vd);
+  if(wv&&wd){
+    const plan=nutPlan(), wk=Math.max(0,(new Date(wd)-new Date(NUT_START))/6048e5), i=Math.min(plan.length-1,Math.floor(wk));
+    const pw=i>=plan.length-1?plan[i]:plan[i]+(plan[i+1]-plan[i])*(wk-i), dv=pw-wv;
+    if(dv<-0.3) add(-dv*20,"Вес отстаёт от плана",
+      `${fmt(wv)} кг при плане ${fmt(Math.round(pw*100)/100)} — позади на ${fmt(Math.round(-dv*100)/100)} кг`,
+      "Разобрать неделю по дневнику: где калории выше коридора и какие дни без записи. Урезать меню резко не надо");
+    if(dv>1.5) add(dv*5,"Не ускоряться",
+      `впереди плана на ${fmt(Math.round(dv*100)/100)} кг`,
+      "При жировой болезни печени быстрый сброс ухудшает биохимию. Держать 2 300 ккал, не срезать ниже");
+  }
+  // шаги
+  const sp=((seriesOf(d).find(x=>x.id==="steps")||{}).pts||[]).slice(-2);
+  if(sp.length===2&&sp[1][1]<10000) add((10000-sp[1][1])/200,"Добрать шаги",
+    `${fmt(sp[1][1])} в день при цели 10 000${sp[1][1]<sp[0][1]?`, неделей раньше было ${fmt(sp[0][1])}`:""}`,
+    `Не хватает около ${fmt(Math.round((10000-sp[1][1])/100)*100)} шагов — это 10–15 минут ходьбы. Проще всего пешком часть дороги или звонки на ходу`);
+  if(!out.length) return `<div class="progsec"><div class="progsec-h"><b>Что сделать на этой неделе</b></div><div class="muted">Все метрики в цели — держать как есть.</div></div>`;
+  out.sort((a,b)=>b.w-a.w);
+  return `<div class="progsec"><div class="progsec-h"><b>Что сделать на этой неделе</b><span class="muted" style="font-size:12px">по метрикам выше · сначала самое большое отклонение</span></div>
+    <ol class="recs">${out.slice(0,5).map(r=>`<li><b>${esc(r.t)}</b> <span class="muted">— ${esc(r.why)}</span><div>${esc(r.how)}</div></li>`).join("")}</ol></div>`;
+}
 function progForm(d){
   const P=(d.nutrition&&d.nutrition.prog)||null;
   if(!P) return "";
@@ -4278,7 +4344,8 @@ function progForm(d){
   <div class="muted" style="font-size:11.5px;margin-bottom:11px">${esc(P.note||"")}</div>
   ${progMacros(P)}
   ${progSleep(P)}
-  ${progRings(d,P)}`;
+  ${progRings(d,P)}
+  ${progRecs(d,P)}`;
 }
 // Меню недели: если его правили руками, берём правленую версию
 const MEALS=["Завтрак","Обед","Перекус","Ужин"];
@@ -5300,18 +5367,18 @@ function render(){
       </tbody></table></div>
     </div>`:""}
 
-    ${todo.length?`<div class="card">
+    ${(()=>{ const next=todo.filter(x=>!x.self&&/^(записаться|записан|сдать|спросить)$/.test(x.tag)&&!/постоянно/i.test(x.when||"")); return next.length?`<div class="card">
       <h2>С чего начать</h2>
-      <div class="muted" style="margin:-6px 0 12px">Первые ${Math.min(4,todo.length)} пункта, если делать по порядку. Это накопившееся, а не пожар — бросать дела не нужно ни по одному из них.${d.alarm?" Когда действительно нельзя ждать — в красной карточке выше.":""} Нажмите пункт — откроется всё по теме: анализы, исследования, приёмы и динамика</div>
+      <div class="muted" style="margin:-6px 0 12px">Ближайшее, что нужно сделать самому: записаться к врачу, сдать анализ или задать вопрос. Привычки и справки — в полном списке дел ниже. Нажмите пункт — откроется всё по теме</div>
       <div class="soon">
-        ${todo.slice(0,4).map(x=>`<div class="soonitem"${todoAttrs(x)}>
+        ${next.slice(0,4).map(x=>`<div class="soonitem"${todoAttrs(x)}>
           <span class="pill s-${x.st}">${esc(x.tag)}</span>
           <b>${esc(x.title)}</b>
           <span class="muted">${esc(x.why)}</span>
           <span class="muted" style="font-size:12px">⏱ ${esc(x.when||"без даты")}</span>
         </div>`).join("")}
       </div>
-    </div>`:""}
+    </div>`:""})()}
 
     ${d.meds?`<div class="card">
       <h2>Принимает сейчас</h2>
