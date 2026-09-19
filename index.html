@@ -320,7 +320,8 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .macleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-bottom:4px}
 .macleg i,.mt-n i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .macchart{width:100%;height:auto;display:block}
-.wsum-p{margin:4px 0 6px;font-size:13.5px;line-height:1.5}
+.wsum-t{font-weight:700;font-size:14px;margin:8px 0 2px}
+.wsum-l{margin:0 0 4px;padding-left:20px;font-size:13.5px;line-height:1.5}
 .recs{margin:4px 0 0;padding-left:20px;font-size:13.5px;line-height:1.45}
 .recs li{margin-bottom:8px}
 .recs li div{font-size:12.5px;margin-top:2px}
@@ -3910,7 +3911,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 19:29";   // подставляется при публикации
+const BUILD="19.09 19:31";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4160,29 +4161,62 @@ function progMacros(P){
 function weekSum(map,N,days,have,prev,pdays){
   if(!have.length) return "";
   const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
-  const avg=(ds,k)=>{ const v=ds.map(x=>map[x][k]).filter(v=>v!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null };
-  const MX=[["k","Калории","ккал",v=>Math.abs(v-N.k)/N.k],["p","Белок","г",v=>Math.max(0,N.p-v)/N.p],
-            ["f","Жиры","г",v=>Math.max(0,v-N.f)/N.f],["c","Углеводы","г",v=>Math.abs(v-N.c)/N.c],["s","Соль","г",v=>Math.max(0,v-N.s)/N.s]];
-  const r1=k=>k==="s"?v=>fmt(Math.round(v*10)/10):v=>fmt(Math.round(v));
-  const up=[],down=[];
-  if(prev.length<have.length) up.push(`дневник заполнен ${have.length} из 7 дней${prev.length?` (неделей раньше — ${prev.length})`:""}`);
-  MX.forEach(([k,n,u,dist])=>{
-    const a=avg(have,k), b=prev.length?avg(prev,k):null; if(a==null) return;
-    const da=dist(a);
-    if(b==null) return;
-    const txt=`${n.toLowerCase()} ${r1(k)(b)} → ${r1(k)(a)} ${u} (норма ${k==="s"?"до ":""}${fmt(N[k])})`;
-    const db=dist(b);
-    if(db-da>0.03) up.push(txt); else if(da-db>0.03) down.push(txt);
-  });
-  // текстом, одной фразой на строку: плашка + перечисление через запятую
-  const line=(l,st,lab)=>l.length?`<p class="wsum-p"><span class="pill s-${st}">${lab}</span> ${l.join(", ")}.</p>`:"";
-  const cap=l=>l.map((x,i)=>i?x:x.charAt(0).toUpperCase()+x.slice(1));
-  const body=line(cap(up),"ok","Улучшилось")+line(cap(down),"bad","Ухудшилось");
-  if(!body) return "";
+  const vals=(ds,k)=>ds.map(x=>map[x][k]).filter(v=>v!=null);
+  const avg=(ds,k)=>{ const v=vals(ds,k); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null };
+  const r=(k,v)=>k==="s"?fmt(Math.round(v*10)/10):fmt(Math.round(v));
+  const dist={k:v=>Math.abs(v-N.k)/N.k,p:v=>Math.max(0,N.p-v)/N.p,f:v=>Math.max(0,v-N.f)/N.f,c:v=>Math.abs(v-N.c)/N.c,s:v=>Math.max(0,v-N.s)/N.s};
+  const okDay=(k,v)=>dist[k](v)<=(k==="k"||k==="c"?0.1:0.05);
+  const inN=k=>have.filter(x=>map[x][k]!=null&&okDay(k,map[x][k])).length;
+  const nDays=n=>n===0?"ни одного дня":`${n} ${n===1?"день":n<5?"дня":"дней"}`;
+  const DOW=["вс","пн","вт","ср","чт","пт","сб"], dm=x=>{const t=new Date(x+"T12:00:00");return `${DOW[t.getDay()]} ${String(t.getDate()).padStart(2,"0")}.${String(t.getMonth()+1).padStart(2,"0")}`};
+  const A={}, B={}; ["k","p","f","c","s"].forEach(k=>{ A[k]=avg(have,k); B[k]=prev.length?avg(prev,k):null });
+  const moved=k=>A[k]==null||B[k]==null?0:dist[k](B[k])-dist[k](A[k]);   // >0 — ближе к норме
+  const up=[], down=[];
+  const andJoin=l=>l.length<2?l.join(""):l.slice(0,-1).join(", ")+" и "+l[l.length-1];
+  const today=new Date().toISOString().slice(0,10), running=days[6]>=today;   // неделя ещё идёт
+  // дневник
+  if(prev.length&&prev.length<have.length) up.push(have.length===7
+    ? `Дневник заполнен все 7 дней${prev.length?`. Неделей раньше было ${nDays(prev.length)}`:""}.`
+    : `Дневник заполнен ${have.length} из 7 дней${prev.length?`, неделей раньше — ${prev.length}`:""}.`);
+  if(prev.length>have.length&&!running) down.push(`Дневник заполнен ${have.length} из 7 дней, неделей раньше — ${prev.length}. Без записей не видно, где набегают калории.`);
+  // калории
+  if(A.k!=null){
+    const m=moved("k"), inside=dist.k(A.k)<=0.1, was=B.k!=null?`. Неделей раньше было около ${fmt(Math.round(B.k/10)*10)}${dist.k(B.k)>0.1?`, это заметно ${B.k<N.k?"ниже":"выше"} плана`:""}`:"";
+    if(m>0.03) up.push(inside?`Калории в норме: в среднем ${r("k",A.k)}, в коридоре ±10% ${inN("k")} из ${have.length} дн${was?was:""}.`:`Калории ближе к норме: ${r("k",A.k)} против ${r("k",B.k)} при норме ${fmt(N.k)}.`);
+    else if(m<-0.03) down.push(`Калории ${A.k>N.k?"выше":"ниже"} нормы: в среднем ${r("k",A.k)} при норме ${fmt(N.k)}, в коридоре ${inN("k")} из ${have.length} дн.${B.k!=null?` Неделей раньше было ${r("k",B.k)}`:""}.`);
+  }
+  // белок
+  if(A.p!=null&&B.p!=null){
+    if(moved("p")>0.03) up.push(`Белка стало больше: ${r("p",A.p)} г против ${r("p",B.p)}.`);
+    else if(moved("p")<-0.03) down.push(`Белка стало меньше: ${r("p",A.p)} г против ${r("p",B.p)} при норме ${N.p}.`);
+  }
+  // жиры
+  if(A.f!=null){
+    const over=have.filter(x=>map[x].f!=null&&map[x].f>N.f*1.3).map(x=>`${dm(x)} (${Math.round(map[x].f/N.f*100)}% нормы)`);
+    const share=A.k?Math.round(A.f*9/A.k*100):null;
+    if(moved("f")>0.03) up.push(`Жиров стало меньше: ${r("f",A.f)} г против ${r("f",B.f)} при норме ${N.f}${dist.f(A.f)>0.15?" — но всё ещё заметно выше нормы":""}.`);
+    else if(moved("f")<-0.03||dist.f(A.f)>0.15) down.push(`Жиры ${B.f!=null&&A.f>B.f?"выросли до":"держатся на"} ${r("f",A.f)} г при норме ${N.f}. В норме — ${nDays(inN("f"))} из ${have.length}${share?`, жиры дают ${share}% калорий`:""}.${over.length?` Сильнее всего выбиваются ${andJoin(over.slice(0,3))}.`:""}`);
+  }
+  // углеводы
+  if(A.c!=null){
+    if(moved("c")>0.03) up.push(`Углеводы ближе к норме: ${r("c",A.c)} г против ${r("c",B.c)} при норме ${N.c}.`);
+    else if(moved("c")<-0.03||dist.c(A.c)>0.15){
+      const pct=Math.round(A.c/N.c*100), swap=A.c<N.c&&A.f!=null&&A.f>N.f*1.1&&A.k!=null&&dist.k(A.k)<=0.1;
+      down.push(`Углеводов ${A.c<N.c?"мало":"много"}: ${r("c",A.c)} г, это ${pct}% нормы.${swap?" Калории в норме, но их добирают жиры вместо углеводов.":""}`);
+    }
+  }
+  // соль
+  if(A.s!=null&&B.s!=null){
+    const one=vals(prev,"s").length<=1?", хотя это сравнение с одним днём":"";
+    if(moved("s")>0.03) up.push(`Соли меньше: ${r("s",A.s)} г против ${r("s",B.s)}${one}.`);
+    else if(moved("s")<-0.03) down.push(`Соли больше: ${r("s",A.s)} г против ${r("s",B.s)} при норме до ${N.s}${one}.`);
+  }
+  if(!up.length&&!down.length) return "";
+  const blk=(l,st,t)=>l.length?`<div class="wsum-t" style="color:var(--${st})">${t}</div><ul class="wsum-l">${l.map(x=>`<li>${x}</li>`).join("")}</ul>`:"";
   const shaky=prev.length&&prev.length<4?` · сравнение условное: в прошлой неделе записано только ${prev.length} дн.`:"";
   return `<div class="wsum">
-    <div class="progsec-h" style="margin-top:12px"><b>Итоги недели</b><span class="muted" style="font-size:12px">${pdays?`к неделе ${ru(pdays[0])} — ${ru(pdays[6])}`:"прошлой недели в дневнике нет"}${shaky}</span></div>
-    ${body}</div>`;
+    <div class="progsec-h" style="margin-top:12px"><b>Итоги недели</b><span class="muted" style="font-size:12px">${pdays?`к неделе ${ru(pdays[0])} — ${ru(pdays[6])}`:"прошлой недели в дневнике нет"}${shaky}${running?" · неделя ещё идёт, итоги предварительные":""}</span></div>
+    ${blk(up,"ok","Что улучшилось")}${blk(down,"bad","Что ухудшилось")}</div>`;
 }
 // Сон по неделям: таблица, одна строка — одна неделя трекера (вс — сб), новые сверху.
 // В клетке — значение, цвет — насколько близко к цели: зелёный в цели, жёлтый рядом, красный далеко
