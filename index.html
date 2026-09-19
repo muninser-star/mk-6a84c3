@@ -3918,7 +3918,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 18:42";   // подставляется при публикации
+const BUILD="19.09 18:46";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4091,6 +4091,7 @@ function progItems(d){
 // БЖУ по дням: столбики в % от нормы. Белок — чем ближе к норме и выше, тем лучше;
 // жиры — лучше не выше нормы; углеводы — коридор вокруг нормы
 const MAC=[["p","Белок","#3b7dd8"],["f","Жиры","#e0892b"],["c","Углеводы","#2e9d68"]];
+const KCOL="#8a63c9";                               // калории — свой цвет, столбик первым в группе
 let progWk=null;                                   // начало выбранной недели; null — последняя, где есть записи
 function macGrade(k,pct){
   if(k==="p") return pct>=95?"ok":pct>=80?"warn":"bad";
@@ -4111,11 +4112,11 @@ function progMacros(P){
   const fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
   const DOW=["вс","пн","вт","ср","чт","пт","сб"];
   // график
-  const W=680,H=230,L=36,R=6,T=10,B=46, iw=W-L-R, ih=H-T-B;
-  let mx=150; days.forEach(x=>{ if(map[x]) MAC.forEach(([k])=>{ mx=Math.max(mx,map[x][k]/N[k]*100) }) });
+  const W=680,H=250,L=36,R=6,T=26,B=40, iw=W-L-R, ih=H-T-B;
+  let mx=150; days.forEach(x=>{ if(map[x]) ["k",...MAC.map(m=>m[0])].forEach(k=>{ mx=Math.max(mx,map[x][k]/N[k]*100) }) });
   mx=Math.ceil(mx/50)*50;
-  const y=v=>T+ih*(1-Math.min(v,mx)/mx), gw=iw/7, bw=gw*0.22;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" class="macchart" role="img" aria-label="Белки, жиры и углеводы по дням в процентах от нормы">`;
+  const y=v=>T+ih*(1-Math.min(v,mx)/mx), gw=iw/7, bw=gw*0.2;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" class="macchart" role="img" aria-label="Калории, белки, жиры и углеводы по дням в процентах от нормы">`;
   svg+=`<rect x="${L}" y="${y(110)}" width="${iw}" height="${y(90)-y(110)}" fill="var(--ok)" opacity=".09"/>`;
   for(let g=0; g<=mx; g+=50){
     const is100=g===100;
@@ -4124,14 +4125,15 @@ function progMacros(P){
   }
   days.forEach((dd,i)=>{
     const gx=L+gw*i, r=map[dd], dt=new Date(dd+"T12:00:00");
-    if(r) MAC.forEach(([k,n,col],j)=>{
-      const pct=Math.round(r[k]/N[k]*100), bx=gx+gw/2-bw*1.5+bw*j+0.5;
-      svg+=`<rect x="${bx.toFixed(1)}" y="${y(pct).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y(0)-y(pct)).toFixed(1)}" rx="2" fill="${col}"><title>${ru(dd)} · ${n}: ${r[k]} г из ${N[k]} — ${pct}%</title></rect>`;
+    if(r) [["k","Калории",KCOL],...MAC].forEach(([k,n,col],j)=>{
+      const pct=Math.round(r[k]/N[k]*100), bx=gx+gw/2-bw*2+bw*j+0.5, u=k==="k"?"ккал":"г";
+      svg+=`<rect x="${bx.toFixed(1)}" y="${y(pct).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y(0)-y(pct)).toFixed(1)}" rx="2" fill="${col}"><title>${ru(dd)} · ${n}: ${fmt(r[k])} ${u} из ${fmt(N[k])} — ${pct}%</title></rect>`;
+      if(k==="k") svg+=`<text x="${(bx+bw/2).toFixed(1)}" y="${(y(pct)-4).toFixed(1)}" font-size="10" font-weight="600" fill="${KCOL}" stroke="var(--card,#fff)" stroke-width="3" paint-order="stroke" text-anchor="middle">${fmt(r.k)}</text>`;
     });
     else svg+=`<text x="${gx+gw/2}" y="${y(0)-8}" font-size="10.5" fill="var(--muted)" text-anchor="middle">нет записи</text>`;
     const kc=r?macGrade("k",r.k/N.k*100):null;
     svg+=`<text x="${gx+gw/2}" y="${H-B+16}" font-size="11.5" fill="var(--ink)" text-anchor="middle">${DOW[dt.getDay()]} ${dt.getDate()}</text>`;
-    if(r) svg+=`<text x="${gx+gw/2}" y="${H-B+31}" font-size="10.5" fill="var(--${kc==="ok"?"muted":kc})" text-anchor="middle">${fmt(r.k)} ккал${r.s!=null&&r.s>N.s?` · 🧂${fmt(r.s)}`:""}</text>`;
+    if(r) svg+=`<text x="${gx+gw/2}" y="${H-B+31}" font-size="10.5" fill="var(--${kc==="ok"?"ok":kc})" text-anchor="middle">${Math.round(r.k/N.k*100)}% ккал${r.s!=null&&r.s>N.s?` · 🧂${fmt(r.s)}`:""}</text>`;
   });
   svg+=`</svg>`;
   // недельные средние и сдвиг к прошлой неделе
@@ -4143,7 +4145,7 @@ function progMacros(P){
       : have.filter(x=>macGrade(k,map[x][k]/norm*100)==="ok").length;
     const dl=pa==null?"":(()=>{ const dv=Math.round(a-pa); return dv===0?"как на прошлой":`${dv>0?"+":"−"}${fmt(Math.abs(k==="s"?Math.round((a-pa)*10)/10:dv))} к прошлой` })();
     const extra=k==="f"&&avg(have,"k")?` · ${Math.round(a*9/avg(have,"k")*100)}% калорий`:"";
-    const col=(MAC.find(m=>m[0]===k)||[])[2];
+    const col=k==="k"?KCOL:(MAC.find(m=>m[0]===k)||[])[2];
     return `<div class="mt s-${st}">
       <div class="mt-n">${col?`<i style="background:${col}"></i>`:""}${n}</div>
       <div class="mt-v">${fmt(k==="s"?Math.round(a*10)/10:Math.round(a))} <small>${u} · ${Math.round(pct)}% нормы</small></div>
@@ -4154,7 +4156,7 @@ function progMacros(P){
   return `<div class="progsec">
     <div class="progsec-h"><b>Питание по дням</b>
       <span class="wknav">${nav(weeks[wi-1],"‹")}<span>${ru(days[0])} — ${ru(days[6])}</span>${nav(weeks[wi+1],"›")}</span></div>
-    <div class="macleg">${MAC.map(([k,n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join("")}<span class="muted">пунктир — 100% нормы, зелёная полоса — ±10%</span></div>
+    <div class="macleg"><span><i style="background:${KCOL}"></i>Калории <small class="muted">(цифра над столбиком — ккал)</small></span>${MAC.map(([k,n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join("")}<span class="muted">пунктир — норма (100%): ${fmt(N.k)} ккал · белок ${N.p} г · жиры ${N.f} г · углеводы ${N.c} г; зелёная полоса — ±10%</span></div>
     ${svg}
     <div class="mtiles">${tiles}</div>
   </div>`;
