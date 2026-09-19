@@ -321,6 +321,15 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .macleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-bottom:4px}
 .macleg i,.mt-n i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .macchart{width:100%;height:auto;display:block}
+.rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.ringbox{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px}
+.ring2{width:112px;height:112px;flex:none}
+.ringtxt{font-size:12.5px;line-height:1.45;min-width:0}
+.ringtxt b{font-size:14px;display:block;margin-bottom:2px}
+.ringtxt .big{font-size:15px;font-weight:700;margin:2px 0}
+.ringtxt .muted{font-size:11.5px}
+.ringleg{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-top:4px}
+.ringleg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .sleep-sum{font-size:13px;margin:2px 0 8px}
 .stab{width:100%;border-collapse:collapse;font-size:13px}
 .stab th{text-align:left;font-weight:600;font-size:12px;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:bottom}
@@ -2179,11 +2188,11 @@ denis:{/*SYM:denis*/sym:{"cat":[{"n":"Вспышки, молнии, плаваю
     prog:{
       week:"30 авг – 5 сен",           // завершённая неделя трекера: вс 30.08 — сб 05.09
       updated:"2026-09-06",
-      note:"Питание — из дневника (итоги по дням). Сон, шаги и активность — недельные средние трекера, обновляются при разборе по скриншотам. Вес — сам из замеров.",
+      note:"Питание — из дневника (итоги по дням). Сон и шаги — недельные средние трекера, обновляются при разборе по скриншотам. Вес — сам из замеров.",
       items:[
-        {n:"Вес",hint:"от 85,4 к цели 78",live:"weight",v:85.2,base:85.4,goal:78,u:"кг",lo:1,prev:85.4},
+        // вес — запасное значение, если замеры ещё не подтянулись; живой берётся из замеров
+        {n:"Вес",hint:"от 85,4 к цели 78",live:"weight",v:84.05,vd:"2026-09-19",base:85.4,goal:78,u:"кг",lo:1,prev:85.4},
         {n:"Шаги",hint:"среднее за неделю",v:9121,base:7194,goal:10000,u:"",prev:9456},
-        {n:"Активные калории",hint:"среднее за неделю",v:444,base:345,goal:500,u:"ккал",prev:345},
         // сон — отдельным рядом ниже (sleep), здесь только движение
       ],
       // сон по неделям трекера (вс — сб), источник — Денис/Сон/Сон по неделям — данные.md
@@ -3918,7 +3927,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 18:50";   // подставляется при публикации
+const BUILD="19.09 18:53";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4213,6 +4222,53 @@ function progSleep(P){
       ${rows.length>8?`<button class="wkbtn wide" data-sleepall="1">${sleepAll?"Свернуть":`Все ${rows.length} недель`}</button>`:""}</div>
   </div>`;
 }
+// Вес и шаги — два кольца. Внешнее — факт (эта неделя), внутреннее — план (прошлая неделя)
+function ring2(outer,inner,col,center,sub){
+  const C=(r)=>2*Math.PI*r, arc=(r,f,c,w)=>`<circle cx="60" cy="60" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"
+      stroke-dasharray="${C(r).toFixed(1)}" stroke-dashoffset="${(C(r)*(1-Math.max(0,Math.min(1,f)))).toFixed(1)}" transform="rotate(-90 60 60)"/>`;
+  return `<svg viewBox="0 0 120 120" class="ring2">
+    <circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="10"/>
+    <circle cx="60" cy="60" r="39" fill="none" stroke="var(--line)" stroke-width="7"/>
+    ${arc(52,outer,`var(--${col})`,10)}${arc(39,inner,"#3b7dd8",7)}
+    <text x="60" y="61" text-anchor="middle" font-size="19" font-weight="700" fill="var(--${col})">${center}</text>
+    <text x="60" y="76" text-anchor="middle" font-size="9.5" fill="var(--muted)">${sub}</text></svg>`;
+}
+function progRings(d,P){
+  const items=progItems(d), fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
+  const kg=v=>fmt(Math.round(v*100)/100);
+  const out=[];
+  const w=items.find(x=>x.live==="weight");
+  if(w){
+    const F=nutLS("weight",[]), last=F[F.length-1];
+    const wd=(last&&last.v)?last.d:(w.vd||new Date().toISOString().slice(0,10));
+    // план на дату последнего замера: синяя линия графика веса, между неделями — по прямой
+    const plan=nutPlan(), wk=Math.max(0,(new Date(wd)-new Date(NUT_START))/6048e5), k=Math.min(plan.length-1,Math.floor(wk));
+    const pw=k>=plan.length-1?plan[k]:plan[k]+(plan[k+1]-plan[k])*(wk-k);
+    const total=NUT_W0-NUT_GOAL, lostF=NUT_W0-w.v, lostP=NUT_W0-pw, dv=Math.round((pw-w.v)*100)/100;
+    const pct=lostP>0?Math.round(lostF/lostP*100):null;
+    const col=dv>=0?"ok":dv>=-0.5?"warn":"bad";
+    out.push(`<div class="ringbox">${ring2(lostF/total,lostP/total,col,pct==null?"—":pct+"%","от плана")}
+      <div class="ringtxt"><b>Вес к плану</b>
+        <div>Факт ${kg(w.v)} кг · план на ${ru(wd)} — ${kg(pw)} кг</div>
+        <div class="big" style="color:var(--${col})">${dv>0?`опережаешь на ${kg(dv)} кг`:dv<0?`отстаёшь на ${kg(-dv)} кг`:"ровно по плану"}</div>
+        <div class="muted">Сброшено ${kg(Math.max(0,lostF))} из ${kg(total)} кг, по плану к этой дате ${kg(lostP)}. До цели ${NUT_GOAL} кг — ${kg(Math.max(0,w.v-NUT_GOAL))} кг</div>
+        <div class="ringleg"><span><i style="background:var(--${col})"></i>факт</span><span><i style="background:#3b7dd8"></i>план (синяя линия)</span></div>
+      </div></div>`);
+  }
+  const st=items.find(x=>x.n==="Шаги");
+  if(st&&st.prev){
+    const dp=Math.round((st.v-st.prev)/st.prev*1000)/10, col=dp>=0?"ok":dp>=-10?"warn":"bad";
+    out.push(`<div class="ringbox">${ring2(st.v/st.goal,st.prev/st.goal,col,`${dp>0?"+":dp<0?"−":""}${fmt(Math.abs(dp))}%`,"к прошлой")}
+      <div class="ringtxt"><b>Шаги к прошлой неделе</b>
+        <div>${esc(P.week)}: ${fmt(st.v)} в день · неделей раньше ${fmt(st.prev)}</div>
+        <div class="big" style="color:var(--${col})">${dp>0?`больше на ${fmt(st.v-st.prev)} шагов в день`:dp<0?`меньше на ${fmt(st.prev-st.v)} шагов в день`:"столько же"}</div>
+        <div class="muted">Цель ${fmt(st.goal)}: эта неделя — ${Math.round(st.v/st.goal*100)}%, прошлая — ${Math.round(st.prev/st.goal*100)}%</div>
+        <div class="ringleg"><span><i style="background:var(--${col})"></i>эта неделя</span><span><i style="background:#3b7dd8"></i>прошлая</span></div>
+      </div></div>`);
+  }
+  return out.length?`<div class="progsec"><div class="progsec-h"><b>Вес и шаги</b><span class="muted" style="font-size:12px">внешнее кольцо — факт, внутреннее синее — план или прошлая неделя</span></div>
+    <div class="rings">${out.join("")}</div></div>`:"";
+}
 function progForm(d){
   const P=(d.nutrition&&d.nutrition.prog)||null;
   if(!P) return "";
@@ -4222,18 +4278,7 @@ function progForm(d){
   <div class="muted" style="font-size:11.5px;margin-bottom:11px">${esc(P.note||"")}</div>
   ${progMacros(P)}
   ${progSleep(P)}
-  ${items.length?`<div class="progsec"><div class="progsec-h"><b>Движение и вес</b><span class="muted" style="font-size:12px">за ${esc(P.week)} · к прошлой неделе</span></div>
-  <div class="progbars">${items.map(x=>{
-    const p=Math.round(x.pct*100);
-    const col=p>=60?"ok":p>=30?"warn":"bad";
-    const arrow = x.prev==null?"" : (x.lo ? (x.v<x.prev?"↓":x.v>x.prev?"↑":"→") : (x.v>x.prev?"↑":x.v<x.prev?"↓":"→"));
-    const good = x.prev==null?null : (x.lo ? x.v<x.prev : x.v>x.prev);
-    return `<div class="progrow">
-      <div class="pl"><b>${esc(x.n)}</b><i>${esc(x.hint||"")}</i></div>
-      <div class="pbar"><span style="width:${p}%;background:var(--${col})"></span></div>
-      <div class="pv">${x.prev!=null?`<small>${esc(fmt(x.prev))} → </small>`:""}${esc(fmt(x.v))}<small> / ${esc(fmt(x.goal))} ${esc(x.u||"")}</small>
-        ${arrow?`<em style="color:var(--${good?"ok":"bad"})">${arrow}</em>`:""}</div>
-    </div>`}).join("")}</div></div>`:""}`;
+  ${progRings(d,P)}`;
 }
 // Меню недели: если его правили руками, берём правленую версию
 const MEALS=["Завтрак","Обед","Перекус","Ужин"];
