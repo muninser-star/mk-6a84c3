@@ -3927,7 +3927,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 18:53";   // подставляется при публикации
+const BUILD="19.09 18:55";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4230,7 +4230,7 @@ function ring2(outer,inner,col,center,sub){
     <circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="10"/>
     <circle cx="60" cy="60" r="39" fill="none" stroke="var(--line)" stroke-width="7"/>
     ${arc(52,outer,`var(--${col})`,10)}${arc(39,inner,"#3b7dd8",7)}
-    <text x="60" y="61" text-anchor="middle" font-size="19" font-weight="700" fill="var(--${col})">${center}</text>
+    <text x="60" y="62" text-anchor="middle" font-size="17" font-weight="700" fill="var(--${col})">${center}</text>
     <text x="60" y="76" text-anchor="middle" font-size="9.5" fill="var(--muted)">${sub}</text></svg>`;
 }
 function progRings(d,P){
@@ -4245,9 +4245,8 @@ function progRings(d,P){
     const plan=nutPlan(), wk=Math.max(0,(new Date(wd)-new Date(NUT_START))/6048e5), k=Math.min(plan.length-1,Math.floor(wk));
     const pw=k>=plan.length-1?plan[k]:plan[k]+(plan[k+1]-plan[k])*(wk-k);
     const total=NUT_W0-NUT_GOAL, lostF=NUT_W0-w.v, lostP=NUT_W0-pw, dv=Math.round((pw-w.v)*100)/100;
-    const pct=lostP>0?Math.round(lostF/lostP*100):null;
     const col=dv>=0?"ok":dv>=-0.5?"warn":"bad";
-    out.push(`<div class="ringbox">${ring2(lostF/total,lostP/total,col,pct==null?"—":pct+"%","от плана")}
+    out.push(`<div class="ringbox">${ring2(lostF/total,lostP/total,col,dv===0?"0 кг":`${kg(Math.abs(dv))} кг`,dv>0?"впереди плана":dv<0?"позади плана":"ровно по плану")}
       <div class="ringtxt"><b>Вес к плану</b>
         <div>Факт ${kg(w.v)} кг · план на ${ru(wd)} — ${kg(pw)} кг</div>
         <div class="big" style="color:var(--${col})">${dv>0?`опережаешь на ${kg(dv)} кг`:dv<0?`отстаёшь на ${kg(-dv)} кг`:"ровно по плану"}</div>
