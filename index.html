@@ -320,11 +320,7 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .macleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-bottom:4px}
 .macleg i,.mt-n i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .macchart{width:100%;height:auto;display:block}
-.wsum-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
-.wsum-c{border:1px solid var(--line);border-top-width:3px;border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.45}
-.wsum-c.s-ok{border-top-color:var(--ok)}.wsum-c.s-bad{border-top-color:var(--bad)}.wsum-c.s-warn{border-top-color:var(--warn)}
-.wsum-h{font-weight:700;font-size:13px;margin-bottom:3px}
-.wsum-c ul{margin:0;padding-left:16px}
+.wsum-p{margin:4px 0 6px;font-size:13.5px;line-height:1.5}
 .recs{margin:4px 0 0;padding-left:20px;font-size:13.5px;line-height:1.45}
 .recs li{margin-bottom:8px}
 .recs li div{font-size:12.5px;margin-top:2px}
@@ -3914,7 +3910,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 19:27";   // подставляется при публикации
+const BUILD="19.09 19:29";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4168,34 +4164,25 @@ function weekSum(map,N,days,have,prev,pdays){
   const MX=[["k","Калории","ккал",v=>Math.abs(v-N.k)/N.k],["p","Белок","г",v=>Math.max(0,N.p-v)/N.p],
             ["f","Жиры","г",v=>Math.max(0,v-N.f)/N.f],["c","Углеводы","г",v=>Math.abs(v-N.c)/N.c],["s","Соль","г",v=>Math.max(0,v-N.s)/N.s]];
   const r1=k=>k==="s"?v=>fmt(Math.round(v*10)/10):v=>fmt(Math.round(v));
-  const up=[],down=[],rows=[];
+  const up=[],down=[];
   if(prev.length<have.length) up.push(`дневник заполнен ${have.length} из 7 дней${prev.length?` (неделей раньше — ${prev.length})`:""}`);
   MX.forEach(([k,n,u,dist])=>{
     const a=avg(have,k), b=prev.length?avg(prev,k):null; if(a==null) return;
-    const da=dist(a), inN=have.filter(x=>map[x][k]!=null&&dist(map[x][k])<=(k==="k"||k==="c"?0.1:0.05)).length;
-    rows.push({k,n,u,a,da,inN});
+    const da=dist(a);
     if(b==null) return;
     const txt=`${n.toLowerCase()} ${r1(k)(b)} → ${r1(k)(a)} ${u} (норма ${k==="s"?"до ":""}${fmt(N[k])})`;
     const db=dist(b);
     if(db-da>0.03) up.push(txt); else if(da-db>0.03) down.push(txt);
   });
-  // упор — три самых далёких от нормы; дни с перебором больше 30 % называем
-  const DOW=["вс","пн","вт","ср","чт","пт","сб"];
-  const focus=rows.filter(r=>r.da>0.05).sort((a,b)=>b.da-a.da).slice(0,3).map(r=>{
-    const worst=have.filter(x=>map[x][r.k]!=null&&(r.k==="p"?map[x][r.k]<N[r.k]*0.7:map[x][r.k]>N[r.k]*1.3))
-      .map(x=>{ const t=new Date(x+"T12:00:00"); return `${DOW[t.getDay()]} ${t.getDate()} — ${Math.round(map[x][r.k]/N[r.k]*100)}%` });
-    return `<b>${r.n}</b> — ${r1(r.k)(r.a)} ${r.u} в среднем, в норме ${r.inN} из ${have.length} дн.${worst.length?`; сильнее всего: ${worst.join(", ")}`:""}`;
-  });
-  const li=l=>l.length?`<ul>${l.map(x=>`<li>${x}</li>`).join("")}</ul>`:`<div class="muted">—</div>`;
-  const shaky=prev.length&&prev.length<4?`<div class="muted" style="font-size:11.5px">Сравнение условное: в прошлой неделе записано только ${prev.length} дн.</div>`:"";
+  // текстом, одной фразой на строку: плашка + перечисление через запятую
+  const line=(l,st,lab)=>l.length?`<p class="wsum-p"><span class="pill s-${st}">${lab}</span> ${l.join(", ")}.</p>`:"";
+  const cap=l=>l.map((x,i)=>i?x:x.charAt(0).toUpperCase()+x.slice(1));
+  const body=line(cap(up),"ok","Улучшилось")+line(cap(down),"bad","Ухудшилось");
+  if(!body) return "";
+  const shaky=prev.length&&prev.length<4?` · сравнение условное: в прошлой неделе записано только ${prev.length} дн.`:"";
   return `<div class="wsum">
-    <div class="progsec-h" style="margin-top:12px"><b>Итоги недели</b><span class="muted" style="font-size:12px">${pdays?`к неделе ${ru(pdays[0])} — ${ru(pdays[6])}`:"прошлой недели в дневнике нет"}</span></div>
-    ${shaky}
-    <div class="wsum-g">
-      <div class="wsum-c s-ok"><div class="wsum-h">Улучшилось</div>${li(up)}</div>
-      <div class="wsum-c s-bad"><div class="wsum-h">Ухудшилось</div>${li(down)}</div>
-      <div class="wsum-c s-warn"><div class="wsum-h">Упор на следующую неделю</div>${li(focus)}<div class="muted" style="font-size:11.5px">что делать — в блоке «Что сделать на этой неделе» ниже</div></div>
-    </div></div>`;
+    <div class="progsec-h" style="margin-top:12px"><b>Итоги недели</b><span class="muted" style="font-size:12px">${pdays?`к неделе ${ru(pdays[0])} — ${ru(pdays[6])}`:"прошлой недели в дневнике нет"}${shaky}</span></div>
+    ${body}</div>`;
 }
 // Сон по неделям: таблица, одна строка — одна неделя трекера (вс — сб), новые сверху.
 // В клетке — значение, цвет — насколько близко к цели: зелёный в цели, жёлтый рядом, красный далеко
