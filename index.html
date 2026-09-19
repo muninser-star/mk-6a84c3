@@ -326,6 +326,12 @@ tr.row{cursor:pointer} tr.row:hover td{background:var(--accentbg)}
 .recs li{margin-bottom:8px}
 .recs li div{font-size:12.5px;margin-top:2px}
 .recs li div i{font-style:normal;color:var(--muted)}
+.ftasks{display:flex;flex-direction:column;gap:3px;margin:5px 0 2px}
+.ftask{font-size:12.5px;display:flex;gap:6px;align-items:baseline;cursor:pointer}
+.ftask input{margin:0;position:relative;top:1px}
+.ftask.on{color:var(--muted);text-decoration:line-through}
+.flv{font-size:10.5px;padding:0 6px;border-radius:5px;border:1px solid var(--line);white-space:nowrap;text-decoration:none;display:inline-block}
+.flv-env{color:#2e9d68;border-color:#2e9d68}.flv-trg{color:#3b7dd8;border-color:#3b7dd8}.flv-fb{color:#e0892b;border-color:#e0892b}
 .rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
 .ringbox{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px}
 .ring2{width:112px;height:112px;flex:none}
@@ -3911,7 +3917,7 @@ function gAuthUrl(st){
 // ---- Правки, сделанные в книжке. Держим локально, чтобы действовали сразу
 // и переживали закрытие вкладки. Когда правка доедет до реестра, наложение снимается само.
 const OVKEY="mkOverlay";
-const BUILD="19.09 19:32";   // подставляется при публикации
+const BUILD="19.09 19:35";   // подставляется при публикации
 const RELAY="https://script.google.com/macros/s/AKfycbwkm6GEGFn9_zSXKM3yW2MKbhIHDvsICghPDJrELhMqLdowavjMKC9CKcAi7VW2eG29/exec";   // сюда встанет адрес приёмника Apps Script — тогда правки уходят в таблицу сразу, без входа
 async function relaySend(sheet,row){
   if(!RELAY) return false;
@@ -4334,8 +4340,25 @@ function progRings(d,P){
   return out.length?`<div class="progsec"><div class="progsec-h"><b>Вес и шаги</b></div>
     <div class="rings">${out.join("")}</div></div>`:"";
 }
-// Что сделать на этой неделе: правила по свежим метрикам прогресса. Пересчитывается само,
+// Фокус недели: правила по свежим метрикам прогресса. Пересчитывается само,
 // когда в дневник, файл сна или замеры приходят новые цифры. Порядок — от самого большого отклонения
+// Простые задачи к каждому фокусу. Три рычага системы, а не сила воли:
+// среда — поменять окружение, чтобы нужное стало самым лёгким; триггер — привязать к тому, что и так происходит;
+// обратная связь — видеть результат, пока он ещё можно поправить
+const FOCUS_TASKS={
+  "Убавить жиры":[["среда","Положить столовую ложку рядом с плитой — масло только ею"],["среда","Соус к мясу и салату — на греческом йогурте вместо майонеза"],["обратная связь","Масло и соусы записывать в дневник отдельной строкой"]],
+  "Добрать белок":[["среда","В воскресенье купить творог или йогурт на 7 завтраков"],["среда","Сварить 6 яиц сразу на три дня"],["триггер","Творог — на верхнюю полку холодильника, первым на глаза утром"]],
+  "Калории выше коридора":[["среда","Ужин — на тарелке меньшего диаметра, добавка только овощами"],["триггер","Перекус с белком в 16:00 — чтобы не приходить к ужину голодным"],["обратная связь","Вечером глянуть итог дня в дневнике до того, как открыть холодильник"]],
+  "Калорий слишком мало":[["триггер","Перекус с белком — будильник на 16:00"],["среда","Йогурт или хумус с хлебцами — в рабочую сумку"],["обратная связь","Если к 20:00 меньше 1 800 ккал — добрать ужином"]],
+  "Меньше соли":[["среда","Солонку — в шкаф, на столе вместо неё лимон и перец"],["среда","Хлеб — не больше двух кусков в день: в нём основная скрытая соль"],["обратная связь","Колбасу, сыр и соусы из магазина — смотреть соль на упаковке, выбирать меньше 1,5 г на 100 г"]],
+  "Засыпать раньше":[["среда","Зарядку телефона перенести из спальни в коридор"],["триггер","Режим «Сон» на телефоне — автоматически за 30 минут до цели"],["триггер","Последняя еда — за 2–3 часа до сна"]],
+  "Ровнее режим сна":[["триггер","Один будильник на подъём на все 7 дней"],["среда","Утром сразу свет: шторы открыть, выйти к окну"],["обратная связь","В выходные разница с буднями — не больше часа"]],
+  "Спать дольше":[["триггер","Напоминание «закругляться» за час до сна"],["среда","Работу и новости — до ужина, после — только спокойное"]],
+  "Вес отстаёт от плана":[["обратная связь","Взвешиваться каждое утро натощак и записывать в книжку"],["обратная связь","Записывать в дневник все 7 дней, включая выходные"]],
+  "Не ускоряться":[["обратная связь","Если за неделю минус больше 1 кг — добавить перекус, а не радоваться"]],
+  "Добрать шаги":[["триггер","Слот «прогулка 10 минут» в календаре сразу после обеда"],["триггер","Созвоны один на один — на ходу, в наушниках"],["среда","Лифт — только вверх с сумками, вниз всегда пешком"]]
+};
+let focusTimer=null;
 function progRecs(d,P){
   const out=[], fmt=z=>String(z).replace(".",",").replace(/\B(?=(\d{3})+(?!\d))/g," ");
   const add=(w,t,why,act,goal,sys)=>out.push({w,t,why,act,goal,sys});
@@ -4417,11 +4440,17 @@ function progRecs(d,P){
     "Лестница пешком вместо лифта и 10 минут ходьбы после обеда",
     `в среднем 10 000 шагов — это +${fmt(Math.round((10000-sp[1][1])/100)*100)} в день`,
     "Короткая ходьба после еды снижает подъём сахара — это прямо про преддиабет и печень. Лестница заодно тренирует ноги и вены");
-  if(!out.length) return `<div class="progsec"><div class="progsec-h"><b>Что сделать на этой неделе</b></div><div class="muted">Все метрики в цели — держать как есть.</div></div>`;
+  if(!out.length) return `<div class="progsec"><div class="progsec-h"><b>Фокус недели</b></div><div class="muted">Все метрики в цели — держать как есть.</div></div>`;
   out.sort((a,b)=>b.w-a.w);
-  return `<div class="progsec"><div class="progsec-h"><b>Что сделать на этой неделе</b><span class="muted" style="font-size:12px">по метрикам выше · сначала самое большое отклонение</span></div>
-    <ol class="recs">${out.slice(0,5).map(r=>`<li><b>${esc(r.t)}</b> <span class="muted">— ${esc(r.why)}</span>
-      <div><i>Сделай:</i> ${esc(r.act)}</div><div><i>Цель недели:</i> <b>${esc(r.goal)}</b></div><div class="muted"><i>Что это даёт:</i> ${esc(r.sys)}</div></li>`).join("")}</ol></div>`;
+  // отметки задач живут на этом устройстве и сбрасываются с новой неделей
+  const wkKey="focus_"+wkStart(new Date().toISOString().slice(0,10)), done=nutLS(wkKey,[]);
+  const tasks=(r,ri)=>(FOCUS_TASKS[r.t]||[]).map(([lv,tx],ti)=>{ const id=r.t+"|"+ti, on=done.includes(id);
+    return `<label class="ftask${on?" on":""}"><input type="checkbox" data-ftask="${esc(id)}" data-fkey="${wkKey}"${on?" checked":""}> <span class="flv flv-${lv==="среда"?"env":lv==="триггер"?"trg":"fb"}">${lv}</span> ${esc(tx)}</label>` }).join("");
+  return `<div class="progsec"><div class="progsec-h"><b>Фокус недели</b><span class="muted" style="font-size:12px">по метрикам выше · сначала самое большое отклонение</span></div>
+    <div class="muted" style="font-size:11.5px;margin:-2px 0 6px">Задачи — не про силу воли, а про три рычага: <span class="flv flv-env">среда</span> делает нужное самым лёгким, <span class="flv flv-trg">триггер</span> привязывает к тому, что и так происходит, <span class="flv flv-fb">обратная связь</span> показывает результат, пока его можно поправить</div>
+    <ol class="recs">${out.slice(0,5).map((r,ri)=>`<li><b>${esc(r.t)}</b> <span class="muted">— ${esc(r.why)}</span>
+      <div><i>Сделай:</i> ${esc(r.act)}</div><div><i>Цель недели:</i> <b>${esc(r.goal)}</b></div><div class="muted"><i>Что это даёт:</i> ${esc(r.sys)}</div>
+      ${(FOCUS_TASKS[r.t]||[]).length?`<div class="ftasks">${tasks(r,ri)}</div>`:""}</li>`).join("")}</ol></div>`;
 }
 function progForm(d){
   const P=(d.nutrition&&d.nutrition.prog)||null;
@@ -6329,6 +6358,10 @@ document.addEventListener("click",e=>{
   if(ib){ ideasToggle(ib.dataset.idea); ideasModal(); render(); return }
 
   if(e.target.closest("[data-sleepall]")){ sleepAll=!sleepAll; render(); return; }
+  const ft=e.target.closest("[data-ftask]");
+  if(ft){ const k=ft.dataset.fkey, a=nutLS(k,[]), id=ft.dataset.ftask, x=a.indexOf(id);
+    if(ft.checked&&x<0) a.push(id); if(!ft.checked&&x>=0) a.splice(x,1); nutSET(k,a);
+    ft.closest(".ftask").classList.toggle("on",ft.checked); return; }
   const pw=e.target.closest("[data-progwk]"); if(pw){ progWk=pw.dataset.progwk; render(); return; }
 
   const ins=e.target.closest("[data-ins]");
